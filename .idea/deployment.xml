@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="cgeorgia@login.leonhard.ethz.ch:22">
+    <serverData>
+      <paths name="cgeorgia@login.leonhard.ethz.ch:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/cluster/home/cgeorgia/bin/biosignals_icu" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
