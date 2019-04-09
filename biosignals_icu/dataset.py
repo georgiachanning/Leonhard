@@ -48,48 +48,39 @@ class DataSet(object):
 
         # all_patients[patient_id] = x, y
 
-        for x in range(0, len(admit_time)):
-            current_patient_id, date = admit_time[x]
+        for i in range(0, len(admit_time)):
+            current_patient_id, date = admit_time[i]
             start_window = parser.parse(date)
             end_me = start_window + timedelta(days=1)
             end_windows.append((current_patient_id, end_me))
 
         feature_preprocess = data_access.get_rrates()
-        for x in range(0, len(feature_preprocess[0])):
-            if feature_preprocess[x][1] <= end_windows[x]:
-                feature_preprocess.remove(feature_preprocess[x])
+        for i in range(0, len(feature_preprocess[0])):
+            if feature_preprocess[i][1] <= end_windows[i]:
+                feature_preprocess.remove(feature_preprocess[i])
 
-        #  find median
-
-        per_patient = []
-
-        '''for x in range(0, len(feature_preprocess[0])):
-            per_patient[x] = feature_preprocess[x][0], feature_preprocess[x][2]
-
-        for x in range(0, len(admit_time)):
-            feature_processed[x] = feature_preprocess[x][0], median(per_patient[x])'''
-
-        patient_id = 2
-        for x in range(0, len(feature_preprocess[0])):
-            if patient_id == feature_preprocess[x][0]:
-                per_patient[patient_id].append(feature_preprocess[x][2])
+        # Find median
+        per_patient = {}
+        for i in range(len(feature_preprocess[0])):
+            patient_id, feature_value = feature_preprocess[i][0], feature_preprocess[i][2]
+            if patient_id in per_patient:
+                per_patient[patient_id].append(feature_value)
             else:
-                feature_processed[x-1] = patient_id, median(per_patient[patient_id])
-                patient_id = feature_preprocess[x][0]
-                per_patient[patient_id].append(feature_preprocess[x][2])
-                patient_id = feature_preprocess[x][0]
+                per_patient[patient_id] = [feature_value]
 
-        return feature_processed
+        for patient_id in per_patient.keys():
+            per_patient[patient_id][1] = np.median(per_patient[patient_id][1])
 
-    def get_y(self):
-        data_access = DataAccess(data_dir="/cluster/work/karlen/data/mimic3")
+        return per_patient
+
+    def get_y(self, data_access):
         x = data_access.get_patients()
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
         y = np.zeros((len(x), 2))
-        for l in range(0, len(x)):
-            y[l][0] = x[l][0]
-            if x[l][0] in patient_ids_with_arrhythmias:
-                y[l][1] = 1
+        for i in range(len(x)):
+            y[i][0] = x[i][0]
+            if x[i][0] in patient_ids_with_arrhythmias:
+                y[i][1] = 1
 
         return y
 
@@ -108,7 +99,8 @@ class DataSet(object):
 
         sss = StratifiedShuffleSplit(n_splits=1, test_size=validation_set_size, random_state=0)
         train_index, val_index = next(sss.split(x[rest_index], y[rest_index]))
-        x_val, y_val = x[val_index], y[val_index]
+
         x_test, y_test = x[test_index], y[test_index]
-        x_train, y_train = x[train_index], y[train_index]
+        x_val, y_val = x[rest_index][val_index], y[rest_index][val_index]
+        x_train, y_train = x[rest_index][train_index], y[rest_index][train_index]
         return x_train, y_train, x_val, y_val, x_test, y_test

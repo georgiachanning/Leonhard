@@ -261,7 +261,7 @@ class DataAccess(object):
         else:
             limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit)
 
-        id_set = map(str, id_set)
+        id_set = map(lambda x: '"' + str(x) + '"', id_set)
         id_set_string = ", ".join(id_set)
 
         query = ("SELECT {COLUMNS} "
@@ -559,7 +559,7 @@ class DataAccess(object):
     def get_patients_with_alcohol_abuse(self):
         item_ids = {
             "F10.1", '980', '2652','2911','2912','2913',
-            '2915','2918','2919','3030','3039','3050', '3575', '4255', '5353', '5710', '5711', '5712',' 5713', 'V113',
+            '2915','2918','2919','3030','3039', '3050', '3575', '4255', '5353', '5710', '5711', '5712',' 5713', 'V113',
         }
         return self.get_items_by_icd(get_subjects=True, id_set=item_ids)
 
