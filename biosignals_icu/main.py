@@ -1,17 +1,31 @@
 from biosignals_icu.dataset import DataSet
 from biosignals_icu.data_access import DataAccess
+from biosignals_icu.predict import Predict
 import numpy as np
-import datetime
 
 
 class Application(object):
     def run(self):
         dataset = DataSet(data_dir="/cluster/work/karlen/data/mimic3")
-        data_access= DataAccess(data_dir="/cluster/work/karlen/data/mimic3")
+        data_access = DataAccess(data_dir="/cluster/work/karlen/data/mimic3")
+        predict = Predict(data_dir="/cluster/work/karlen/data/mimic3")
 
-        print(data_access.has_table("PATIENTS"))
-        x = dataset.get_data()
+        patients = data_access.get_patients()
+        zeros = np.zeros(len(patients))
+        all_patients = {}
+        all_patients = dict(zip(patients, zeros)) # how do i get patient id out of array format?
+
+        l = data_access.get_patients_with_astemizole()
+        rr = dataset.get_rr_data()
+        a = data_access.get_patients_with_lung_disease()
         y = dataset.get_y()
+        x = dataset.before_prediction_x(all_patients)
+        y = dataset.before_prediction_y(y)
+        predict.predict_me(x, y)
+
+        # new idea:  get all data the first time and store it in the all_patients thing,
+        # then for each x, just pull out the things i want for that trial
+
         #dataset.split(x,y,...,...)
 
         # TODO:  icd codes needs to be set so that they CONTAIN the id_set{}

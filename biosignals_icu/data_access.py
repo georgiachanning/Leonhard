@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import sqlite3
 from os.path import join
+import numpy as np
 
 
 class DataAccess(object):
@@ -123,21 +124,18 @@ class DataAccess(object):
     def get_all_table_names(self):
         return map(lambda x: x[0], self.db.execute("SELECT name FROM 'sqlite_master' WHERE type='table';").fetchall())
 
-    def get_patients(self):
+    '''def get_patients(self):
         patients_list_of_tuples = self.db.execute("SELECT DISTINCT subject_id "
                                                   "FROM PATIENTS "
                                                   "ORDER BY subject_id ;"
                                                   ).fetchall()
 
-        return map(lambda x: x[0], patients_list_of_tuples)
+        return map(lambda x: x[0], patients_list_of_tuples)'''
 
-    '''def get_admit_time(self):
-        patients_list_of_admits = self.db.execute("SELECT DISTINCT subject_id, admittime"
-                                                  "FROM ADMISSIONS "
-                                                  "ORDER BY _ROWID_;"
-                                                  ).fetchall()
-
-        return map(lambda x: x[0], patients_list_of_admits)'''
+    def get_patients(self):
+        patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id ;"))
+        patient_array_list = np.asarray(patient_list_in_tuple)
+        return patient_array_list
 
     def get_last_timestamp(self, table_name):
         result = self.db.execute("SELECT timestamp "
@@ -185,6 +183,50 @@ class DataAccess(object):
                     TABLE_NAME=table_name,
                     ID_SET=id_set_string,
                     ERROR_CLAUSE=error_clause,
+                    SUBJECT_CLAUSE=subject_clause,
+                    ORDER_CLAUSE=order_clause,
+                    LIMIT_CLAUSE=limit_clause,
+                    OFFSET_CLAUSE=offset_clause)
+        result = self.db.execute(query).fetchall()
+
+        if value_case is not None:
+            return filter(lambda x: x[1] is not None, result)
+        else:
+            return result
+
+    def get_items_by_drug(self, patient_id=None, id_set=set(), table_name="PRESCRIPTIONS",
+                         get_subjects=True, limit=None, offset=None, value_case=None):
+        if get_subjects:
+            columns = "DISTINCT subject_id, startdate, enddate"
+            subject_clause = ""
+            order_clause = ""
+        else:
+            columns = "subject_id, drug" \
+                if value_case is None else \
+                "subject_id, drug".format(VALUE_CASE=value_case)
+            subject_clause = "AND SUBJECT_ID = '{SUBJECT_ID}'".format(SUBJECT_ID=patient_id)
+            order_clause = " ORDER BY subject_id "
+
+        if offset is None:
+            offset_clause = ""
+        else:
+            offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
+
+        if limit is None:
+            limit_clause = ""
+        else:
+            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit)
+
+        id_set = map(str, id_set)
+        id_set_string = ", ".join(id_set)
+
+        query = ("SELECT {COLUMNS} "
+                 "FROM {TABLE_NAME} "
+                 "WHERE DRUG = {ID_SET} "
+                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {LIMIT_CLAUSE} {OFFSET_CLAUSE};") \
+            .format(COLUMNS=columns,
+                    TABLE_NAME=table_name,
+                    ID_SET=id_set_string,
                     SUBJECT_CLAUSE=subject_clause,
                     ORDER_CLAUSE=order_clause,
                     LIMIT_CLAUSE=limit_clause,
@@ -447,13 +489,13 @@ class DataAccess(object):
     def get_admit_time(self, limit=None):
         return list(self.db.execute("SELECT SUBJECT_ID, ADMITTIME FROM ADMISSIONS ORDER BY SUBJECT_ID;").fetchall())
 
-    def get_potassium(self, patient_id):
+    def get_potassium(self):
         item_ids = {
             3725, 1535, 829, 50883, 50971, 44711, 50822
             # itemid IN (50822, 50971)
             # make sure to filter out children
         }
-        return self.get_items_by_id_set(patient_id=patient_id, id_set=item_ids)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
     # when icd9_code = '42610' then 1
     #     when icd9_code = '42611' then 1
@@ -563,14 +605,31 @@ class DataAccess(object):
 
     def get_gender(self):
         patient_and_gender = self.db.execute("SELECT subject_id, gender "
-                        "FROM PATIENTS "
-                        "ORDER BY subject_id ;"
-                        ).fetchall()
+                                                "FROM PATIENTS "
+                                                "ORDER BY subject_id ;"
+                                                ).fetchall()
         return map(lambda x: x[0], patient_and_gender)
 
+    def get_patients_with_terfenadine(self):
+        terfenadine = self.db.execute("SELECT subject_id, startdate, enddate "
+                                     "FROM PRESCRIPTIONS "
+                                     "WHERE DRUG LIKE 'Terfenadine' "
+                                     "ORDER BY subject_id ;").fetchall()
+        return map(lambda x: x[0], terfenadine)
 
+    def get_patients_with_astemizole(self):
+        astemizole = self.db.execute("SELECT subject_id, startdate, enddate "
+                                        "FROM PRESCRIPTIONS "
+                                        "WHERE DRUG LIKE 'Astemizole' "
+                                        "ORDER BY subject_id ;").fetchall()
+        return map(lambda x: x[0], astemizole)
 
-
+    def get_patients_with_quinine(self):
+        quinine = self.db.execute("SELECT subject_id, startdate, enddate "
+                                     "FROM PRESCRIPTIONS "
+                                     "WHERE DRUG LIKE 'Quinine' OR 'Quinoline'"
+                                     "ORDER BY subject_id ;").fetchall()
+        return map(lambda x: x[0], quinine)
 
 
 

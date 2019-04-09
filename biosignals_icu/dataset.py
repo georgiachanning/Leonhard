@@ -18,13 +18,12 @@ import pandas as pd
 import os.path
 import numpy as np
 import scipy.sparse
-from dateutil import relativedelta
 from dateutil import parser
-from datetime import datetime
+from datetime import timedelta
 from biosignals_icu.data_access import DataAccess
 import sqlite3
-from unicodedata import normalize
 from os.path import join
+from statistics import median
 
 
 class DataSet(object):
@@ -39,52 +38,77 @@ class DataSet(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
-    def whatami(self, module):
-        print(dir(module))
-
-    def get_data(self):
+    def get_rr_data(self):
         data_access = DataAccess(data_dir="/cluster/work/karlen/data/mimic3")
         # preprocess=data_access.{which_data}
-        admit_time = data_access.get_admit_time(limit=100)
-        end_window = []
-
+        admit_time = data_access.get_admit_time()
+        feature_processed = np.zeros((len(admit_time), 2))
+        end_windows = []
         # date format= '2125-04-25 23:39:00'
 
-        for x in range(0, admit_time.__len__()-1):
-            date = admit_time[x][1]
-            start_window = parser.parse(date, yearfirst=True, dayfirst=False)  # date must be python string, not unicode
-            # print(start_window)
-            # end_me = start_window + relativedelta(days=+1)
-            # end_window.append((admit_time[x][0], end_me))
+        # all_patients[patient_id] = x, y
+
+        for x in range(0, len(admit_time)):
+            current_patient_id, date = admit_time[x]
+            start_window = parser.parse(date)
+            end_me = start_window + timedelta(days=1)
+            end_windows.append((current_patient_id, end_me))
 
         feature_preprocess = data_access.get_rrates()
-        feature_process = np.zeros_like(feature_preprocess)
-        for x in range(0, feature_preprocess.__len__()-1):
-            if feature_preprocess[x] <= end_window[x]:
-                feature_process = feature_preprocess # delete events where time is less than window
+        for x in range(0, len(feature_preprocess[0])):
+            if feature_preprocess[x][1] <= end_windows[x]:
+                feature_preprocess.remove(feature_preprocess[x])
 
-        return feature_process
+        #  find median
+
+        per_patient = []
+
+        '''for x in range(0, len(feature_preprocess[0])):
+            per_patient[x] = feature_preprocess[x][0], feature_preprocess[x][2]
+
+        for x in range(0, len(admit_time)):
+            feature_processed[x] = feature_preprocess[x][0], median(per_patient[x])'''
+
+        patient_id = 2
+        for x in range(0, len(feature_preprocess[0])):
+            if patient_id == feature_preprocess[x][0]:
+                per_patient[patient_id].append(feature_preprocess[x][2])
+            else:
+                feature_processed[x-1] = patient_id, median(per_patient[patient_id])
+                patient_id = feature_preprocess[x][0]
+                per_patient[patient_id].append(feature_preprocess[x][2])
+                patient_id = feature_preprocess[x][0]
+
+        return feature_processed
 
     def get_y(self):
         data_access = DataAccess(data_dir="/cluster/work/karlen/data/mimic3")
         x = data_access.get_patients()
-        num_patients = data_access.get_num_rows('PATIENTS')
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
-        # y = np.zeros_like(x)
-        y = [num_patients][2]
-        for l in range(0, num_patients - 1):
+        y = np.zeros((len(x), 2))
+        for l in range(0, len(x)):
             y[l][0] = x[l][0]
             if x[l][0] in patient_ids_with_arrhythmias:
                 y[l][1] = 1
 
-    def split(self, x, y, val_set_size, test_set_size):
+        return y
+
+    def before_prediction_x(self, x):
+        np.delete(x, 0, 0)
+        return x
+
+    def before_prediction_y(self, y):
+        np.delete(y, 0, 0)
+        return y
+
+    def split(self, x, y, validation_set_size, test_set_size):
         from sklearn.model_selection import StratifiedShuffleSplit
         sss = StratifiedShuffleSplit(n_splits=1, test_size=test_set_size, random_state=0)
         rest_index, test_index = next(sss.split(x, y))
 
-
-        #TODO: Split off val from rest indices
-        x_val, y_val = None, None
+        sss = StratifiedShuffleSplit(n_splits=1, test_size=validation_set_size, random_state=0)
+        train_index, val_index = next(sss.split(x[rest_index], y[rest_index]))
+        x_val, y_val = x[val_index], y[val_index]
         x_test, y_test = x[test_index], y[test_index]
-        x_train, y_train = None, None
+        x_train, y_train = x[train_index], y[train_index]
         return x_train, y_train, x_val, y_val, x_test, y_test
