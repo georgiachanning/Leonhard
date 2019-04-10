@@ -134,7 +134,7 @@ class DataAccess(object):
 
     def get_patients(self):
         patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id ;"))
-        patient_array_list = np.asarray(patient_list_in_tuple)
+        patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list
 
     def get_last_timestamp(self, table_name):
