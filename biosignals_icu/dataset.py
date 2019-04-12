@@ -17,13 +17,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import pandas as pd
 import os.path
 import numpy as np
-import scipy.sparse
 from dateutil import parser
 from datetime import timedelta
 from biosignals_icu.data_access import DataAccess
 import sqlite3
 from os.path import join
-from statistics import median
 
 
 class DataSet(object):
@@ -38,11 +36,8 @@ class DataSet(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
-    def get_rr_data(self):
-        data_access = DataAccess(data_dir="/cluster/work/karlen/data/mimic3")
-        # preprocess=data_access.{which_data}
-        admit_time = data_access.get_admit_time()
-        feature_processed = np.zeros((len(admit_time), 2))
+    def get_rr_data(self, data_access):
+        admit_time = data_access.get_admit_time(limit=300)
         end_windows = []
         # date format= '2125-04-25 23:39:00'
 
@@ -54,14 +49,15 @@ class DataSet(object):
             end_me = start_window + timedelta(days=1)
             end_windows.append((current_patient_id, end_me))
 
-        feature_preprocess = data_access.get_rrates()
+        feature_preprocess = data_access.get_rrates(limit=1000)
         for i in range(0, len(feature_preprocess[0])):
             if feature_preprocess[i][1] <= end_windows[i]:
                 feature_preprocess.remove(feature_preprocess[i])
 
         # Find median
         per_patient = {}
-        for i in range(len(feature_preprocess[0])):
+        rr_by_patient_id = {}
+        for i in range(0, len(feature_preprocess)):
             patient_id, feature_value = feature_preprocess[i][0], feature_preprocess[i][2]
             if patient_id in per_patient:
                 per_patient[patient_id].append(feature_value)
@@ -69,9 +65,14 @@ class DataSet(object):
                 per_patient[patient_id] = [feature_value]
 
         for patient_id in per_patient.keys():
-            per_patient[patient_id][1] = np.median(per_patient[patient_id][1])
+            # per_patient[patient_id][1] = np.median(per_patient[patient_id])
+            for i in range(0, len(per_patient[patient_id])):
+                if per_patient[patient_id][i] == '':
+                    per_patient[patient_id].remove(per_patient[patient_id][i])
+            np.array(per_patient[patient_id]).astype(np.int)
+            rr_by_patient_id[patient_id] = np.median(per_patient[patient_id])
 
-        return per_patient
+        return rr_by_patient_id
 
     def get_y(self, data_access):
         x = data_access.get_patients()
