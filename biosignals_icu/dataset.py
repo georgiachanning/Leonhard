@@ -59,17 +59,13 @@ class DataSet(object):
         rr_by_patient_id = {}
         for i in range(0, len(feature_preprocess)):
             patient_id, feature_value = feature_preprocess[i][0], feature_preprocess[i][2]
-            if patient_id in per_patient:
-                per_patient[patient_id].append(feature_value)
-            else:
-                per_patient[patient_id] = [feature_value]
+            if isinstance(feature_value, float):
+                if patient_id in per_patient:
+                    per_patient[patient_id].append(feature_value)
+                else:
+                    per_patient[patient_id] = [feature_value]
 
         for patient_id in per_patient.keys():
-            # per_patient[patient_id][1] = np.median(per_patient[patient_id])
-            for i in range(0, len(per_patient[patient_id])):
-                if per_patient[patient_id][i] == '':
-                    per_patient[patient_id].remove(per_patient[patient_id][i])
-            np.array(per_patient[patient_id]).astype(np.int)
             rr_by_patient_id[patient_id] = np.median(per_patient[patient_id])
 
         return rr_by_patient_id

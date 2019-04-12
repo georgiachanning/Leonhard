@@ -27,14 +27,13 @@ class Application(object):
         dataset = DataSet(data_dir=data_dir)
         data_access = DataAccess(data_dir=data_dir)
 
-        rr = dataset.get_rr_data()
-        patients = data_access.get_patients()
-        all_patients = dict(zip(patients, rr))  # how do i get patient id out of array format?
+        rr = dataset.get_rr_data(data_access)
+        # all_patients = dict(zip(patients_with_arrhythmias, rr))
 
 
-        y = dataset.get_y(data_access)
-        x = dataset.before_prediction_x(all_patients)
-        y = dataset.before_prediction_y(y)
+        y_with_patient_id = dataset.get_y(data_access)
+        x = dataset.before_prediction_x(rr)
+        y = dataset.before_prediction_y(y_with_patient_id)
 
         '''validation_set_fraction = 0.1  # TODO: Make program argument
         test_set_fraction = 0.2  # TODO: Make program argument'''
