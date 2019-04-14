@@ -30,17 +30,16 @@ class Application(object):
         rr = dataset.get_rr_data(data_access)
         # all_patients = dict(zip(patients_with_arrhythmias, rr))
 
-
         y_with_patient_id = dataset.get_y(data_access)
-        x = dataset.before_prediction_x(rr)
-        y = dataset.before_prediction_y(y_with_patient_id)
+        y = dataset.before_training_y(y_with_patient_id)
+        x = dataset.before_training_x(rr)
 
-        '''validation_set_fraction = 0.1  # TODO: Make program argument
-        test_set_fraction = 0.2  # TODO: Make program argument'''
+        print(len(x) == len(y))
+
         x_train, y_train, x_val, y_val, x_test, y_test = \
             dataset.split(x, y,
-                          validation_set_size=int(np.rint(validation_set_fraction*len(all_patients))),
-                          test_set_size=int(np.rint(test_set_fraction*len(all_patients))))
+                          validation_set_size=int(np.rint(validation_set_fraction*len(x))),
+                          test_set_size=int(np.rint(test_set_fraction*len(x))))
 
         rf = RandomForestClassifier()
         rf.fit(x_train, y_train)

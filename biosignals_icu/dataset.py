@@ -37,7 +37,7 @@ class DataSet(object):
         return db
 
     def get_rr_data(self, data_access):
-        admit_time = data_access.get_admit_time(limit=300)
+        admit_time = data_access.get_admit_time()
         end_windows = []
         # date format= '2125-04-25 23:39:00'
 
@@ -49,7 +49,7 @@ class DataSet(object):
             end_me = start_window + timedelta(days=1)
             end_windows.append((current_patient_id, end_me))
 
-        feature_preprocess = data_access.get_rrates(limit=1000)
+        feature_preprocess = data_access.get_rrates()
         for i in range(0, len(feature_preprocess[0])):
             if feature_preprocess[i][1] <= end_windows[i]:
                 feature_preprocess.remove(feature_preprocess[i])
@@ -74,20 +74,26 @@ class DataSet(object):
         x = data_access.get_patients()
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
         y = np.zeros((len(x), 2))
-        for i in range(len(x)):
-            y[i][0] = x[i][0]
-            if x[i][0] in patient_ids_with_arrhythmias:
+        for i in range(0, len(x)):
+            patient_id = x[i]
+            y[i][0] = patient_id
+            if patient_id in patient_ids_with_arrhythmias:
                 y[i][1] = 1
 
         return y
 
-    def before_prediction_x(self, x):
-        np.delete(x, 0, 0)
-        return x
+    def before_training_x(self, x):
+        # x is a dict, need value ordered by patient_id
+        x_processed = []
+        for key in sorted(x):
+            x_processed.append(x[key])
+        return x_processed
 
-    def before_prediction_y(self, y):
-        np.delete(y, 0, 0)
-        return y
+    def before_training_y(self, y):
+        y_processed = [None]*len(y)
+        for i in range(0, len(y)):
+            y_processed[i] = y[i][1]  # why "list assignment out of range"
+        return y_processed
 
     def split(self, x, y, validation_set_size, test_set_size):
         from sklearn.model_selection import StratifiedShuffleSplit
