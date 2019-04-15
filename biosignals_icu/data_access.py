@@ -137,6 +137,14 @@ class DataAccess(object):
         patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list
 
+    def get_adult_patients(self):
+        adult_patients_in_tuple = list(self.db.execute("SELECT ADMISSIONS.subject_id FROM ADMISSIONS "
+                                                       "INNER JOIN PATIENTS ON ADMISSIONS.subject_id = PATIENTS.subject_id "
+                                                       "WHERE ADMISSIONS.admittime - PATIENTS.dob > 15 "
+                                                       "ORDER BY subject_id ;"))
+        adult_patient_list = list(sum(adult_patients_in_tuple, ()))
+        return adult_patient_list
+
     def get_last_timestamp(self, table_name):
         result = self.db.execute("SELECT timestamp "
                                  "FROM '{table_name}' "
@@ -486,8 +494,21 @@ class DataAccess(object):
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, limit=limit)
 
-    def get_admit_time(self, limit=None):
-        return list(self.db.execute("SELECT SUBJECT_ID, ADMITTIME FROM ADMISSIONS ORDER BY SUBJECT_ID;").fetchall())
+    '''def get_admit_time(self, limit=None):
+        return list(self.db.execute("SELECT SUBJECT_ID, ADMITTIME FROM ADMISSIONS "
+                                    "ORDER BY SUBJECT_ID;").fetchall())'''
+
+    def get_admit_time(self, data_access, limit=None):
+        patients = data_access.get_patients()
+        admit_times = [None]*len(patients)
+        for i in range(0, len(patients)):
+            patient_id = patients[i]
+            query = ("SELECT ADMITTIME FROM ADMISSIONS WHERE ADMISSIONS.subject_id = {PATIENT_ID} ;")\
+                .format(PATIENT_ID=patient_id)
+            admit_time_per_patient = self.db.execute(query).fetchone()
+            admit_times[i] = patients[i], admit_time_per_patient[0]
+
+        return admit_times
 
     def get_potassium(self):
         item_ids = {

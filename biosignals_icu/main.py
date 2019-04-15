@@ -30,11 +30,9 @@ class Application(object):
         rr = dataset.get_rr_data(data_access)
         # all_patients = dict(zip(patients_with_arrhythmias, rr))
 
-        y_with_patient_id = dataset.get_y(data_access)
+        y_with_patient_id = dataset.get_y(data_access, rr)
         y = dataset.before_training_y(y_with_patient_id)
         x = dataset.before_training_x(rr)
-
-        print(len(x) == len(y))
 
         x_train, y_train, x_val, y_val, x_test, y_test = \
             dataset.split(x, y,
