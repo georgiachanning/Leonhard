@@ -21,8 +21,8 @@ from biosignals_icu.data_access import DataAccess
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
-
 class Application(object):
+    from numpy import array
     def run(self, data_dir, validation_set_fraction, test_set_fraction):
         dataset = DataSet(data_dir=data_dir)
         data_access = DataAccess(data_dir=data_dir)
@@ -39,6 +39,8 @@ class Application(object):
                           validation_set_size=int(np.rint(validation_set_fraction*len(x))),
                           test_set_size=int(np.rint(test_set_fraction*len(x))))
 
+        np.array(x_train).reshape(-1, 1)
+        np.array(y_train).reshape(-1, 1)
         rf = RandomForestClassifier()
         rf.fit(x_train, y_train)
 

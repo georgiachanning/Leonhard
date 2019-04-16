@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import pandas as pd
 import os.path
 import numpy as np
-from numpy import ndarray
+from numpy import array
 from dateutil import parser
 from datetime import timedelta
 from biosignals_icu.data_access import DataAccess
@@ -99,16 +99,23 @@ class DataSet(object):
         return y_processed
 
     def split(self, x, y, validation_set_size, test_set_size):
+        from operator import itemgetter
         from sklearn.model_selection import StratifiedShuffleSplit
         sss = StratifiedShuffleSplit(n_splits=1, test_size=test_set_size, random_state=0)
         rest_index, test_index = next(sss.split(x, y))
-        
+
+        rest_x = [x[i] for i in rest_index]
+        rest_y = [y[i] for i in rest_index]
+
         # something is not acceptable about rest_index formatting
 
         sss = StratifiedShuffleSplit(n_splits=1, test_size=validation_set_size, random_state=0)
-        train_index, val_index = next(sss.split(x[rest_index], y[rest_index]))
+        train_index, val_index = next(sss.split(rest_x, rest_y))
 
-        x_test, y_test = x[test_index], y[test_index]
-        x_val, y_val = x[rest_index][val_index], y[rest_index][val_index]
-        x_train, y_train = x[rest_index][train_index], y[rest_index][train_index]
+        x_test, y_test = [x[i] for i in test_index], [y[i] for i in test_index]
+        x_val, y_val = [x[i] for i in val_index], [y[i] for i in val_index]
+        x_train, y_train = [x[i] for i in train_index], [y[i] for i in train_index]
+
+        '''x_val, y_val = x[rest_index][val_index], y[rest_index][val_index]
+        x_train, y_train = x[rest_index][train_index], y[rest_index][train_index]'''
         return x_train, y_train, x_val, y_val, x_test, y_test
