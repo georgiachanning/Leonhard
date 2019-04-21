@@ -544,7 +544,9 @@ class DataAccess(object):
             "42610", "42611", "42613", "4262", "42653", "4266", "42689", "4270", "4272", "42731", "42760", "4279",
             "7850"
         }
-        return self.get_items_by_icd(get_subjects=True, id_set=item_ids)
+        arrhythmias_in_tuples = self.get_items_by_icd(get_subjects=True, id_set=item_ids)
+        patients_with_arrhythmias = list(sum(arrhythmias_in_tuples, ()))
+        return patients_with_arrhythmias
 
     def get_patients_with_dyspnea(self):
         item_ids = {

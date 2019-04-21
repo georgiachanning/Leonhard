@@ -37,8 +37,12 @@ class DataSet(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
-    def make_all_patients(self, all_patients_dict):
-        return all_patients_dict
+    def make_all_patients(self):
+        """all_patients = data_access.get_patients() # should be get adult patients\
+                features_of_all_patients = {}
+                for key in all_patients:
+                    features_of_all_patients.setdefault(key, []).append(8)"""
+        return
 
     def get_rr_data(self, data_access, limit):
         admit_time = data_access.get_admit_time(data_access)
@@ -75,17 +79,6 @@ class DataSet(object):
     def get_y(self, data_access, x):
         # x = data_access.get_patients()
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
-
-        '''y = np.zeros((len(x), 2))
-        counter = 0
-        for key in sorted(x):
-            patient_id = key
-            y[counter][0] = patient_id
-            if patient_id in patient_ids_with_arrhythmias:
-                y[counter][1] = 1
-            counter = counter + 1
-        # TODO: Change this to return a dictionary indexed on patient_id'''
-
         y = {}
         for key in x:
             if key in patient_ids_with_arrhythmias:
@@ -97,8 +90,13 @@ class DataSet(object):
     def delete_patient_ids(self, data_set):
         processed_data_set = np.array(0)
 
-        for value in data_set.values():
-            processed_data_set = append(processed_data_set, value)  # should be all except index 0
+        '''for value in data_set.values():  # this needs to be sorted!!!
+            processed_data_set = append(processed_data_set, value)  # should be all except index 0'''
+
+        for i in range(len(data_set)):
+            key = sorted(data_set.keys())[i]
+            value = data_set[key]
+            processed_data_set = append(processed_data_set, value)
 
         return processed_data_set
 

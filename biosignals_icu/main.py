@@ -27,12 +27,9 @@ class Application(object):
         dataset = DataSet(data_dir=data_dir)
         data_access = DataAccess(data_dir=data_dir)
 
-        '''all_patients = data_access.get_patients() # should be get adult patients\
-        features_of_all_patients = {}
-        for key in all_patients:
-            features_of_all_patients.setdefault(key, []).append(8)'''
+        patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
 
-        rr = dataset.get_rr_data(data_access, limit=10000)
+        rr = dataset.get_rr_data(data_access, limit=500)
         y_with_patient_id = dataset.get_y(data_access, rr)
         y = dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
         x = dataset.delete_patient_ids(rr)
@@ -44,8 +41,8 @@ class Application(object):
                           validation_set_size=int(np.rint(validation_set_fraction*len(x))),
                           test_set_size=int(np.rint(test_set_fraction*len(x))))
 
-        # x_train = np.array(x_train).reshape(-1, 1)
-        # x_test = np.array(x_test).reshape(-1, 1)
+        x_train = np.array(x_train).reshape(-1, 1)
+        x_test = np.array(x_test).reshape(-1, 1)
 
         rf = RandomForestClassifier()
         rf.fit(x_train, y_train)

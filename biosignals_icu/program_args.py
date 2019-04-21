@@ -41,6 +41,8 @@ class ReadableDir(Action):
                             help="max depth of each tree")
         parser.add_argument("--max_num_of_trees", default=3000,
                             help="max num of trees in forest")
+        parser.add_argument("--num_features", default=1,
+                            help="num of features passed")
 
         return vars(parser.parse_args())
 
