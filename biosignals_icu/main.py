@@ -44,8 +44,8 @@ class Application(object):
                           validation_set_size=int(np.rint(validation_set_fraction*len(x))),
                           test_set_size=int(np.rint(test_set_fraction*len(x))))
 
-        x_train = np.array(x_train).reshape(-1, 1)
-        x_test = np.array(x_test).reshape(-1, 1)
+        # x_train = np.array(x_train).reshape(-1, 1)
+        # x_test = np.array(x_test).reshape(-1, 1)
 
         rf = RandomForestClassifier()
         rf.fit(x_train, y_train)

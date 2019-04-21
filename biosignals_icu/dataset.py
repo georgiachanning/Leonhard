@@ -1,5 +1,5 @@
 """
-Copyright (C) 2019  ETH Zurich
+Copyright (C) 2019  Georgia Channing, ETH Zurich
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import pandas as pd
 import os.path
 import numpy as np
-from numpy import array
+from numpy import append
 from dateutil import parser
 from datetime import timedelta
 from biosignals_icu.data_access import DataAccess
@@ -95,13 +95,11 @@ class DataSet(object):
         return y
 
     def delete_patient_ids(self, data_set):
-        # processed_data_set = np.array(len(data_set))
-        print(data_set.items())
-        array = np.fromiter(data_set.items(), dtype=int, count=len(data_set))
+        processed_data_set = np.array(0)
 
-        '''for counter, value in enumerate(sorted(data_set.values())):
-            processed_data_set[counter] = value  # should be all except index 0
-            counter = counter + 1'''
+        for value in data_set.values():
+            processed_data_set = append(processed_data_set, value)  # should be all except index 0
+
         return processed_data_set
 
     def split(self, x, y, validation_set_size, test_set_size):
