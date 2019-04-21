@@ -15,45 +15,47 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-
 from biosignals_icu.dataset import DataSet
 from biosignals_icu.data_access import DataAccess
+# from biosignals_icu.program_args import parse_parameters
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+from collections import defaultdict
 
 class Application(object):
-    from numpy import array
     def run(self, data_dir, validation_set_fraction, test_set_fraction):
         dataset = DataSet(data_dir=data_dir)
         data_access = DataAccess(data_dir=data_dir)
 
-        rr = dataset.get_rr_data(data_access)
-        # all_patients = dict(zip(patients_with_arrhythmias, rr))
+        '''all_patients = data_access.get_patients() # should be get adult patients\
+        features_of_all_patients = {}
+        for key in all_patients:
+            features_of_all_patients.setdefault(key, []).append(8)'''
 
+        rr = dataset.get_rr_data(data_access, limit=10000)
         y_with_patient_id = dataset.get_y(data_access, rr)
-        y = dataset.before_training_y(y_with_patient_id)
-        x = dataset.before_training_x(rr)
+        y = dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
+        x = dataset.delete_patient_ids(rr)
+
+        # later should be x = dataset.delete_patient_ids(features_of_all_patients)
 
         x_train, y_train, x_val, y_val, x_test, y_test = \
             dataset.split(x, y,
                           validation_set_size=int(np.rint(validation_set_fraction*len(x))),
                           test_set_size=int(np.rint(test_set_fraction*len(x))))
 
-        np.array(x_train).reshape(-1, 1)
-        np.array(y_train).reshape(-1, 1)
+        x_train = np.array(x_train).reshape(-1, 1)
+        x_test = np.array(x_test).reshape(-1, 1)
+
         rf = RandomForestClassifier()
         rf.fit(x_train, y_train)
 
-        # TODO: Program argument to switch between test set and validation set here.
         y_pred = rf.predict_proba(x_test)
 
         # Compare y_test and y_pred
 
-        # new idea:  get all data the first time and store it in the all_patients thing,
-        # then for each x, just pull out the things i want for that trial
-
         #dataset.split(x,y,...,...)
-
+        # TODO: Program argument to switch between test set and validation set here.
         # TODO: filter children?
         # https://github.com/MIT-LCP/mimic-code/blob/ddd4557423c6b0505be9b53d230863ef1ea78120/concepts/cookbook/potassium.sql
         # contains filtering for adults

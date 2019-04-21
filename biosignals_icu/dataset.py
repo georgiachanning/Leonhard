@@ -37,30 +37,31 @@ class DataSet(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
-    def get_rr_data(self, data_access):
-        admit_time = data_access.get_admit_time(data_access, limit=300)
-        end_windows = []
+    def make_all_patients(self, all_patients_dict):
+        return all_patients_dict
+
+    def get_rr_data(self, data_access, limit):
+        admit_time = data_access.get_admit_time(data_access)
+        end_windows = {}
         # date format= '2125-04-25 23:39:00'
 
-        # all_patients[patient_id] = x, y
-
-        for i in range(0, len(admit_time)):
-            current_patient_id, date = admit_time[i]
+        for (current_patient_id, date) in admit_time:
             start_window = parser.parse(date)
             end_me = start_window + timedelta(days=1)
-            end_windows.append((current_patient_id, end_me))
+            end_windows[current_patient_id] = end_me
 
-        feature_preprocess = data_access.get_rrates(limit=5000)
-        for i in range(0, len(feature_preprocess[0])):
-            if feature_preprocess[i][1] <= end_windows[i]:
-                feature_preprocess.remove(feature_preprocess[i])
+        all_respiratory_rates = data_access.get_rrates(limit)
 
         # Find median
         per_patient = {}
         rr_by_patient_id = {}
-        for i in range(0, len(feature_preprocess)):
-            patient_id, feature_value = feature_preprocess[i][0], feature_preprocess[i][2]
-            if isinstance(feature_value, float):
+        for (patient_id, measurement_time, feature_value) in all_respiratory_rates:
+            measurement_time = parser.parse(measurement_time)
+            max_time_allowed = end_windows[patient_id]
+            if not measurement_time <= max_time_allowed:
+                continue
+
+            if isinstance(feature_value, float):  # Ensure there is a measurement number.
                 if patient_id in per_patient:
                     per_patient[patient_id].append(feature_value)
                 else:
@@ -74,7 +75,8 @@ class DataSet(object):
     def get_y(self, data_access, x):
         # x = data_access.get_patients()
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
-        y = np.zeros((len(x), 2))
+
+        '''y = np.zeros((len(x), 2))
         counter = 0
         for key in sorted(x):
             patient_id = key
@@ -82,21 +84,25 @@ class DataSet(object):
             if patient_id in patient_ids_with_arrhythmias:
                 y[counter][1] = 1
             counter = counter + 1
+        # TODO: Change this to return a dictionary indexed on patient_id'''
 
+        y = {}
+        for key in x:
+            if key in patient_ids_with_arrhythmias:
+                y[key] = 1
+            else:
+                y[key] = 0
         return y
 
-    def before_training_x(self, x):
-        # x is a dict, need value ordered by patient_id
-        x_processed = []
-        for key in sorted(x):
-            x_processed.append(x[key])
-        return x_processed
+    def delete_patient_ids(self, data_set):
+        # processed_data_set = np.array(len(data_set))
+        print(data_set.items())
+        array = np.fromiter(data_set.items(), dtype=int, count=len(data_set))
 
-    def before_training_y(self, y):
-        y_processed = [None]*len(y)
-        for i in range(0, len(y)):
-            y_processed[i] = y[i][1]  # why "list assignment out of range"
-        return y_processed
+        '''for counter, value in enumerate(sorted(data_set.values())):
+            processed_data_set[counter] = value  # should be all except index 0
+            counter = counter + 1'''
+        return processed_data_set
 
     def split(self, x, y, validation_set_size, test_set_size):
         from operator import itemgetter

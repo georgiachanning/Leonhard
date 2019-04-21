@@ -500,13 +500,19 @@ class DataAccess(object):
 
     def get_admit_time(self, data_access, limit=None):
         patients = data_access.get_patients()
-        admit_times = [None]*len(patients)
-        for i in range(0, len(patients)):
-            patient_id = patients[i]
-            query = ("SELECT ADMITTIME FROM ADMISSIONS WHERE ADMISSIONS.subject_id = {PATIENT_ID} ;")\
+        admit_times = []
+
+        # TODO: Perform a single query to get all admit times for all patient ids.
+        for patient_id in patients:
+            query = ("SELECT ADMITTIME "
+                     "FROM ADMISSIONS "
+                     "WHERE ADMISSIONS.subject_id = {PATIENT_ID} "
+                     "ORDER BY admittime ASC;")\
                 .format(PATIENT_ID=patient_id)
             admit_time_per_patient = self.db.execute(query).fetchone()
-            admit_times[i] = patients[i], admit_time_per_patient[0]
+            admit_times.append((patient_id, admit_time_per_patient[0]))
+
+        assert len(patients) == len(admit_times)
 
         return admit_times
 
