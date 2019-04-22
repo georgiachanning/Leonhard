@@ -21,6 +21,7 @@ from biosignals_icu.data_access import DataAccess
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 from collections import defaultdict
+from sklearn.externals import joblib
 
 class Application(object):
     def run(self, data_dir, validation_set_fraction, test_set_fraction):
@@ -29,7 +30,7 @@ class Application(object):
 
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
 
-        rr = dataset.get_rr_data(data_access, limit=500)
+        rr = dataset.get_rr_data(data_access, limit=5000)
         y_with_patient_id = dataset.get_y(data_access, rr)
         y = dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
         x = dataset.delete_patient_ids(rr)
@@ -48,10 +49,16 @@ class Application(object):
         rf.fit(x_train, y_train)
 
         y_pred = rf.predict_proba(x_test)
+        feature_importance = rf.feature_importances_
+
+        # saving output and model
+
+        joblib.dump(rf, 'saved_model.pkl')  # want directory, not one file to be written over
+        outfile = open('output.txt', 'a', 1)
+        outfile.write(feature_importance)
+
 
         # Compare y_test and y_pred
-
-        #dataset.split(x,y,...,...)
         # TODO: Program argument to switch between test set and validation set here.
         # TODO: filter children?
         # https://github.com/MIT-LCP/mimic-code/blob/ddd4557423c6b0505be9b53d230863ef1ea78120/concepts/cookbook/potassium.sql
