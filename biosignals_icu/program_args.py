@@ -19,7 +19,7 @@ import os
 from argparse import ArgumentParser, Action, ArgumentTypeError
 
 
-class ReadableDir(Action):
+class Parameters(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         prospective_dir = values
         if not os.path.isdir(prospective_dir):
@@ -33,6 +33,10 @@ class ReadableDir(Action):
         parser = ArgumentParser(description='mimic3 to cardiac arrhythmia prediction')
         parser.add_argument("--dataset", default="/cluster/work/karlen/data/mimic3",
                             help="The data set to be loaded from mimic3).")
+        parser.add_argument("--val_set_frac", default=.1,
+                            help="the fraction of the data that should be used for validation")
+        parser.add_argument("--test_set_frac", default=.2,
+                            help="the fraction of the data that should be used for testing")
         parser.add_argument("--dataset_type", default="train",
                             help="Would you like to use the test, validation or train set?")
         parser.add_argument("--output_file", default="output.txt",
@@ -43,6 +47,13 @@ class ReadableDir(Action):
                             help="max num of trees in forest")
         parser.add_argument("--num_features", default=1,
                             help="num of features passed")
+        parser.add_argument("--rrates", default=True,
+                            help="include respiratory rates?")
+        parser.add_argument("--get_kids", default=False,
+                            help="should this training also include child patients?")
+        parser.add_argument("--heart_attacks", default=False,
+                            help="include heart attack as feature")
+        # should include all possible features as booleans
 
         return vars(parser.parse_args())
 

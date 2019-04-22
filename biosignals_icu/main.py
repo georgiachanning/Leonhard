@@ -15,18 +15,30 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+import sys
 from biosignals_icu.dataset import DataSet
 from biosignals_icu.data_access import DataAccess
-# from biosignals_icu.program_args import parse_parameters
+from biosignals_icu.program_args import Parameters
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 from collections import defaultdict
 from sklearn.externals import joblib
 
+
 class Application(object):
-    def run(self, data_dir, validation_set_fraction, test_set_fraction):
+    def __init__(self, data_dir):  # somehow need to add program arguments?
         dataset = DataSet(data_dir=data_dir)
         data_access = DataAccess(data_dir=data_dir)
+        self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data(data_access, dataset)
+        self.run(data_access, dataset)
+
+    def get_data(self, data_access, dataset):
+        # then should check for every combination of features
+
+        all_patients = dataset.make_all_patients(data_access)
+        return all_patients
+
+    def run(self, data_access, dataset, validation_set_fraction, test_set_fraction):
 
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
 
@@ -57,7 +69,6 @@ class Application(object):
         outfile = open('output.txt', 'a', 1)
         outfile.write(feature_importance)
 
-
         # Compare y_test and y_pred
         # TODO: Program argument to switch between test set and validation set here.
         # TODO: filter children?
@@ -70,5 +81,6 @@ class Application(object):
 
 
 if __name__ == "__main__":
-    app = Application()
+    app = Application(data_dir="/cluster/work/karlen/data/mimic3")
+    # app.__init__("/cluster/work/karlen/data/mimic3")
     app.run("/cluster/work/karlen/data/mimic3", 0.1, 0.2)

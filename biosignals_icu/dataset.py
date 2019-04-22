@@ -37,12 +37,12 @@ class DataSet(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
-    def make_all_patients(self):
-        """all_patients = data_access.get_patients() # should be get adult patients\
-                features_of_all_patients = {}
-                for key in all_patients:
-                    features_of_all_patients.setdefault(key, []).append(8)"""
-        return
+    def make_all_patients(self, data_access):
+        all_patients = data_access.get_patients() # should be get adult patients\
+        features_of_all_patients = {}
+        for key in all_patients:
+            features_of_all_patients.setdefault(key, []).append(8)
+        return features_of_all_patients
 
     def get_rr_data(self, data_access, limit):
         admit_time = data_access.get_admit_time(data_access)
