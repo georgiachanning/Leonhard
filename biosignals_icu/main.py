@@ -25,23 +25,33 @@ from collections import defaultdict
 from sklearn.externals import joblib
 
 # use limits and offsets so that i can finish, also fix so that you dont query a million times for admit time
-
+# implement a program wide limit on patients
 
 class Application(object):
-    def __init__(self):  # somehow need to add program arguments?
+    def __init__(self):
         self.program_args = Parameters.parse_parameters()
         data_dir = self.program_args["dataset"]
+        limit = self.program_args["limit"]
         self.dataset = DataSet(data_dir=data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
         # self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data()
 
     def get_data(self):
-        # then should check for every combination of features
+        time_frames = self.dataset.get_time_frame_per_patient()
+
         if self.program_args["rrates" is True]:
-            self.dataset.get_rr_data(limit=500)
-        if self.program_args["cocaine" is True]:
-            x = 1
-        all_patients = self.dataset.make_all_patients(self.data_access)
+            all_respiratory_rates = self.data_access.get_rrates()
+            dict_with_rr_data = self.dataset.get_rr_data(time_frames, all_respiratory_rates)
+        if self.program_args["alcohol" is True]:
+            patients_with_alcohol_history = self.data_access.get_patients_with_alcohol_abuse()
+            dict_of_patients_alcohol_abuse = self.dataset.alcohol_abuse_binary_dictionary(patients_with_alcohol_history, dict_with_rr_data)
+        if self.program_args["potassium" is True]:
+            potassium_rates = self.data_access.get_potassium()
+            dict_with_median_potassium_rates = self.dataset.get_potassium_data(potassium_rates, time_frames)
+        if self.program_args["sodium" is True]:
+            sodium_rates = self.data_access.get_sodium()
+            dict_with_median_sodium_rates = self.dataset.get_sodium_data(sodium_rates, time_frames)
+        all_patients = self.dataset.make_all_patients()
         return all_patients
 
     def run(self):
@@ -50,7 +60,7 @@ class Application(object):
 
         patient_ids_with_arrhythmias = self.data_access.get_patients_with_arrhythmias()
 
-        rr = self.dataset.get_rr_data(self.data_access, limit=500)
+        rr = self.dataset.get_rr_data()
         y_with_patient_id = self.dataset.get_y(self.data_access, rr)
         y_true = self.dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
         x = self.dataset.delete_patient_ids(rr)

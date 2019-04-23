@@ -124,20 +124,13 @@ class DataAccess(object):
     def get_all_table_names(self):
         return map(lambda x: x[0], self.db.execute("SELECT name FROM 'sqlite_master' WHERE type='table';").fetchall())
 
-    '''def get_patients(self):
-        patients_list_of_tuples = self.db.execute("SELECT DISTINCT subject_id "
-                                                  "FROM PATIENTS "
-                                                  "ORDER BY subject_id ;"
-                                                  ).fetchall()
-
-        return map(lambda x: x[0], patients_list_of_tuples)'''
-
-    def get_patients(self):
-        patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id ;"))
+    def get_patients(self, limit):
+        patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS WHERE ROW_COUNT <= '{limit}' "
+                                                     "ORDER BY subject_id ;").__format__(limit=limit))
         patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list
 
-    def get_adult_patients(self):
+    def get_adult_patients(self, limit):
         adult_patients_in_tuple = list(self.db.execute("SELECT ADMISSIONS.subject_id FROM ADMISSIONS "
                                                        "INNER JOIN PATIENTS ON ADMISSIONS.subject_id = PATIENTS.subject_id "
                                                        "WHERE ADMISSIONS.admittime - PATIENTS.dob > 15 "
@@ -288,7 +281,7 @@ class DataAccess(object):
         if value_case is not None:
             return filter(lambda x: x[1] is not None, result)
         else:
-            return result
+            return list(sum(result, ()))
 
     def get_spo2_values(self, patient_id):
         # From: https://github.com/MIT-LCP/mimic-code/blob/master/concepts/firstday/blood-gas-first-day-arterial.sql
