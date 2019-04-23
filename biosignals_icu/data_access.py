@@ -498,8 +498,8 @@ class DataAccess(object):
         return list(self.db.execute("SELECT SUBJECT_ID, ADMITTIME FROM ADMISSIONS "
                                     "ORDER BY SUBJECT_ID;").fetchall())'''
 
-    def get_admit_time(self, data_access, limit=None):
-        patients = data_access.get_patients()
+    def get_admit_time(self, limit=None):
+        patients = self.data_access.get_patients()
         admit_times = []
 
         # TODO: Perform a single query to get all admit times for all patient ids.

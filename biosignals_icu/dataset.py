@@ -44,8 +44,8 @@ class DataSet(object):
             features_of_all_patients.setdefault(key, []).append(8)
         return features_of_all_patients
 
-    def get_rr_data(self, data_access, limit):
-        admit_time = data_access.get_admit_time(data_access)
+    def get_rr_data(self, limit):
+        admit_time = self.data_access.get_admit_time()
         end_windows = {}
         # date format= '2125-04-25 23:39:00'
 
@@ -54,7 +54,7 @@ class DataSet(object):
             end_me = start_window + timedelta(days=1)
             end_windows[current_patient_id] = end_me
 
-        all_respiratory_rates = data_access.get_rrates(limit)
+        all_respiratory_rates = self.data_access.get_rrates(limit)
 
         # Find median
         per_patient = {}

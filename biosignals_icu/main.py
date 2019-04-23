@@ -15,7 +15,7 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABI
 CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-import sys
+from __future__ import print_function
 from biosignals_icu.dataset import DataSet
 from biosignals_icu.data_access import DataAccess
 from biosignals_icu.program_args import Parameters
@@ -24,35 +24,43 @@ import numpy as np
 from collections import defaultdict
 from sklearn.externals import joblib
 
+# use limits and offsets so that i can finish, also fix so that you dont query a million times for admit time
+
 
 class Application(object):
-    def __init__(self, data_dir):  # somehow need to add program arguments?
-        dataset = DataSet(data_dir=data_dir)
-        data_access = DataAccess(data_dir=data_dir)
-        self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data(data_access, dataset)
-        self.run(data_access, dataset)
+    def __init__(self):  # somehow need to add program arguments?
+        self.program_args = Parameters.parse_parameters()
+        data_dir = self.program_args["dataset"]
+        self.dataset = DataSet(data_dir=data_dir)
+        self.data_access = DataAccess(data_dir=data_dir)
+        # self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data()
 
-    def get_data(self, data_access, dataset):
+    def get_data(self):
         # then should check for every combination of features
-
-        all_patients = dataset.make_all_patients(data_access)
+        if self.program_args["rrates" is True]:
+            self.dataset.get_rr_data(limit=500)
+        if self.program_args["cocaine" is True]:
+            x = 1
+        all_patients = self.dataset.make_all_patients(self.data_access)
         return all_patients
 
-    def run(self, data_access, dataset, validation_set_fraction, test_set_fraction):
+    def run(self):
+        validation_set_fraction = float(self.program_args["validation_set_fraction"])
+        test_set_fraction = float(self.program_args["test_set_fraction"])
 
-        patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
+        patient_ids_with_arrhythmias = self.data_access.get_patients_with_arrhythmias()
 
-        rr = dataset.get_rr_data(data_access, limit=5000)
-        y_with_patient_id = dataset.get_y(data_access, rr)
-        y = dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
-        x = dataset.delete_patient_ids(rr)
+        rr = self.dataset.get_rr_data(self.data_access, limit=500)
+        y_with_patient_id = self.dataset.get_y(self.data_access, rr)
+        y_true = self.dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
+        x = self.dataset.delete_patient_ids(rr)
 
         # later should be x = dataset.delete_patient_ids(features_of_all_patients)
 
         x_train, y_train, x_val, y_val, x_test, y_test = \
-            dataset.split(x, y,
-                          validation_set_size=int(np.rint(validation_set_fraction*len(x))),
-                          test_set_size=int(np.rint(test_set_fraction*len(x))))
+                self.dataset.split(x, y_true,
+                                   validation_set_size=int(np.rint(validation_set_fraction*len(x))),
+                                   test_set_size=int(np.rint(test_set_fraction*len(x))))
 
         x_train = np.array(x_train).reshape(-1, 1)
         x_test = np.array(x_test).reshape(-1, 1)
@@ -62,14 +70,29 @@ class Application(object):
 
         y_pred = rf.predict_proba(x_test)
         feature_importance = rf.feature_importances_
+        # save order so that we know which is which
 
         # saving output and model
-
-        joblib.dump(rf, 'saved_model.pkl')  # want directory, not one file to be written over
-        outfile = open('output.txt', 'a', 1)
-        outfile.write(feature_importance)
+        joblib.dump(rf, self.program_args["model_file"])  # want directory, not one file to be written over
+        np.savez(self.program_args["importances_file"], feature_importance)
+        np.savez(self.program_args["predictions_file"], y_pred)
 
         # Compare y_test and y_pred
+        from sklearn.metrics import roc_auc_score
+
+        y_pred = np.argmax(y_pred, axis=-1)
+
+        auc_score = roc_auc_score(y_test, y_pred)
+        with open(self.program_args["results_file"], "w") as results_file:
+            print("AUC Score is", auc_score, file=results_file)
+
+        # sklearn.metrices.roc_auc_score
+        # sklearn.metrices.f1_score
+        # also average_precision_score
+        # sensitivity or specificity must be also calculated (usually choose the one closest to top left (1,1) of
+        # roc curve, choose this threshold of specificity and sensitivity)
+        # y_score is predicted
+        # read what different metrices do and try multiple
         # TODO: Program argument to switch between test set and validation set here.
         # TODO: filter children?
         # https://github.com/MIT-LCP/mimic-code/blob/ddd4557423c6b0505be9b53d230863ef1ea78120/concepts/cookbook/potassium.sql
@@ -81,6 +104,5 @@ class Application(object):
 
 
 if __name__ == "__main__":
-    app = Application(data_dir="/cluster/work/karlen/data/mimic3")
-    # app.__init__("/cluster/work/karlen/data/mimic3")
-    app.run("/cluster/work/karlen/data/mimic3", 0.1, 0.2)
+    app = Application()
+    app.run()
