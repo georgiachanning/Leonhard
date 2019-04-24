@@ -26,7 +26,6 @@ from data_access import DataAccess
 from program_args import Parameters
 
 
-
 class DataSet(object):
     DB_FILE_NAME = "mimic3.db"
 
@@ -42,12 +41,22 @@ class DataSet(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
-    def make_all_patients(self):
+    def make_all_patients(self, **kwargs):
+        # www.geeksforgeeks.org/args-kwargs-python/
+        num_features = self.program_args("num_features")
+        assert self.program_args("num_features") == len(kwargs)
+
         all_patients = self.data_access.get_patients(limit=None)  # should be get adult patients
         features_of_all_patients = {}
-        num_features = self.program_args("num_features")
+
         for key in all_patients:
             features_of_all_patients[key] = None*num_features
+
+        for each_feature in kwargs.values():
+            feature = kwargs[each_feature]
+            for patient in feature:
+                features_of_all_patients[patient] = feature[patient]
+
         return features_of_all_patients
 
     def get_time_frame_per_patient(self):
@@ -132,7 +141,6 @@ class DataSet(object):
         return patients_with_alcohol_abuse_as_dict
 
     def get_y(self, data_access, x):
-        # x = data_access.get_patients()
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
         y = {}
         for key in x:
@@ -144,10 +152,8 @@ class DataSet(object):
 
     def delete_patient_ids(self, data_set):
         processed_data_set = np.array(0)
-
-        '''for value in data_set.values():  # this needs to be sorted!!!
-            processed_data_set = append(processed_data_set, value)  # should be all except index 0'''
-
+        # for this i would loop thru number of values and make a separate 1d array for each one and then concat
+        # (without ids ofc)
         for i in range(len(data_set)):
             key = sorted(data_set.keys())[i]
             value = data_set[key]
@@ -170,6 +176,4 @@ class DataSet(object):
         x_val, y_val = [x[i] for i in val_index], [y[i] for i in val_index]
         x_train, y_train = [x[i] for i in train_index], [y[i] for i in train_index]
 
-        '''x_val, y_val = x[rest_index][val_index], y[rest_index][val_index]
-        x_train, y_train = x[rest_index][train_index], y[rest_index][train_index]'''
         return x_train, y_train, x_val, y_val, x_test, y_test

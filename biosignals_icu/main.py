@@ -31,9 +31,9 @@ class Application(object):
     def __init__(self):
         self.program_args = Parameters.parse_parameters()
         data_dir = self.program_args["dataset"]
-        limit = self.program_args["limit"]
         self.dataset = DataSet(data_dir=data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
+        # limit = self.program_args["limit"]
         # self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data()
 
     def get_data(self):
