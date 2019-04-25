@@ -32,6 +32,9 @@ class DataAccess(object):
         global limit_parameter
         limit_parameter = self.program_args["num_patients_to_load"]
 
+        global loaded_patients
+        loaded_patients = self.get_patients()
+
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
                              check_same_thread=False,
@@ -159,9 +162,10 @@ class DataAccess(object):
 
     def get_items_by_id_set(self, patient_id=None, id_set=set(), table_name="CHARTEVENTS",
                             get_subjects=False, offset=None, value_case=None):
+
         if get_subjects:
             columns = "DISTINCT subject_id, charttime, valuenum"
-            subject_clause = ""
+            subject_clause = "AND subject_id in {loaded_patients}".format(loaded_patients=loaded_patients)
             order_clause = ""
         else:
             columns = "charttime, valuenum" \
@@ -175,11 +179,6 @@ class DataAccess(object):
         else:
             offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
-        if limit_parameter is None:
-            limit_clause = ""
-        else:
-            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit_parameter)
-
         error_clause = ""
         if table_name == "CHARTEVENTS":
             error_clause = "{TABLE_NAME}.error IS NOT 1 AND ".format(TABLE_NAME=table_name)
@@ -187,17 +186,16 @@ class DataAccess(object):
         id_set = map(str, id_set)
         id_set_string = ", ".join(id_set)
 
-        query = ("SELECT {COLUMNS} "  #somehow need to make this so that select for the limited number of patients, not limit on data
+        query = ("SELECT {COLUMNS} "
                  "FROM {TABLE_NAME} "
                  "WHERE {ERROR_CLAUSE} ITEMID IN ({ID_SET}) "
-                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {LIMIT_CLAUSE} {OFFSET_CLAUSE};") \
+                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {OFFSET_CLAUSE};") \
             .format(COLUMNS=columns,
                     TABLE_NAME=table_name,
                     ID_SET=id_set_string,
                     ERROR_CLAUSE=error_clause,
                     SUBJECT_CLAUSE=subject_clause,
                     ORDER_CLAUSE=order_clause,
-                    LIMIT_CLAUSE=limit_clause,
                     OFFSET_CLAUSE=offset_clause)
         result = self.db.execute(query).fetchall()
 
@@ -210,7 +208,7 @@ class DataAccess(object):
                          get_subjects=True, limit=None, offset=None, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id, startdate, enddate"
-            subject_clause = ""
+            subject_clause = "AND subject_id in {loaded_patients}".format(loaded_patients=loaded_patients)
             order_clause = ""
         else:
             columns = "subject_id, drug" \
@@ -224,24 +222,18 @@ class DataAccess(object):
         else:
             offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
-        if limit_parameter is None:
-            limit_clause = ""
-        else:
-            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit_parameter)
-
         id_set = map(str, id_set)
         id_set_string = ", ".join(id_set)
 
         query = ("SELECT {COLUMNS} "
                  "FROM {TABLE_NAME} "
                  "WHERE DRUG = {ID_SET} "
-                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {LIMIT_CLAUSE} {OFFSET_CLAUSE};") \
+                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {OFFSET_CLAUSE};") \
             .format(COLUMNS=columns,
                     TABLE_NAME=table_name,
                     ID_SET=id_set_string,
                     SUBJECT_CLAUSE=subject_clause,
                     ORDER_CLAUSE=order_clause,
-                    LIMIT_CLAUSE=limit_clause,
                     OFFSET_CLAUSE=offset_clause)
         result = self.db.execute(query).fetchall()
 
@@ -251,10 +243,10 @@ class DataAccess(object):
             return result
 
     def get_items_by_icd(self, patient_id=None, id_set=set(), table_name="DIAGNOSES_ICD",
-                         get_subjects=False, limit=None, offset=None, value_case=None):
+                         get_subjects=False, offset=None, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id"
-            subject_clause = ""
+            subject_clause = "AND subject_id in {loaded_patients}".format(loaded_patients=loaded_patients)
             order_clause = ""
         else:
             columns = "subject_id, icd9_code" \
@@ -268,24 +260,18 @@ class DataAccess(object):
         else:
             offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
-        if limit_parameter is None:
-            limit_clause = ""
-        else:
-            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit_parameter)
-
         id_set = map(lambda x: '"' + str(x) + '"', id_set)
         id_set_string = ", ".join(id_set)
 
         query = ("SELECT {COLUMNS} "
                  "FROM {TABLE_NAME} "
                  "WHERE ICD9_CODE IN ({ID_SET}) "
-                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {LIMIT_CLAUSE} {OFFSET_CLAUSE};") \
+                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {OFFSET_CLAUSE};") \
             .format(COLUMNS=columns,
                     TABLE_NAME=table_name,
                     ID_SET=id_set_string,
                     SUBJECT_CLAUSE=subject_clause,
                     ORDER_CLAUSE=order_clause,
-                    LIMIT_CLAUSE=limit_clause,
                     OFFSET_CLAUSE=offset_clause)
         result = self.db.execute(query).fetchall()
 
@@ -468,31 +454,31 @@ class DataAccess(object):
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
-    def get_blood_sugar(self, limit=None):  # TODO: WRONG IDS
+    def get_blood_sugar(self):  # TODO: WRONG IDS
         item_ids = {
             3024171, 44818701, 8541, 615, 1635, 1151, 2117, 3603, 3337, 1884,
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
-    def get_sodium(self, limit=None):  # TODO: WRONG IDS
+    def get_sodium(self):  # TODO: WRONG IDS
         item_ids = {
             50824, 50983,
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
-    def get_heart_rate(self, limit=None):
+    def get_heart_rate(self):
         item_ids = {
             51, 442, 455, 6701, 220179, 220050, 211, 220045
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
-    def get_glucose(self, limit=None):
+    def get_glucose(self):
         item_ids = {
             807, 811, 1529, 3745, 3744, 225664, 220621, 226537,
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
-    def get_mean_blood_pressure(self, limit=None):
+    def get_mean_blood_pressure(self):
         item_ids = {
             456, 52, 6702, 443, 220052, 220181, 225312,
         }

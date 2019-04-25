@@ -37,6 +37,7 @@ class Application(object):
         self.program_args = Parameters.parse_parameters()
         self.dataset = DataSet(data_dir=data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
+        self.data_access.get_mean_blood_pressure()
         self.get_data()
 
         # self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data()
