@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import sqlite3
 from os.path import join
+from program_args import Parameters
 import numpy as np
 
 
@@ -27,6 +28,9 @@ class DataAccess(object):
 
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
+        self.program_args = Parameters.parse_parameters()
+        global limit_parameter
+        limit_parameter = self.program_args["num_patients_to_load"]
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -124,17 +128,20 @@ class DataAccess(object):
     def get_all_table_names(self):
         return map(lambda x: x[0], self.db.execute("SELECT name FROM 'sqlite_master' WHERE type='table';").fetchall())
 
-    def get_patients(self, limit):
-        '''patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS WHERE _ROWID_ <= '{limit}' "
-                                                     "ORDER BY subject_id ;"
-                                                     .__format__(limit=limit)).fetchall()'''
+    def get_patients(self):
 
-        patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS "
-                            "ORDER BY subject_id ;").fetchall())
+        if limit_parameter is None:
+            patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id;")
+                                         .fetchall())
+        else:
+            patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id "
+                                                         "LIMIT {limit} ;"
+                                                         .format(limit=limit_parameter)))
+
         patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list
 
-    def get_adult_patients(self, limit):
+    def get_adult_patients(self):  # also needs limit!!
         adult_patients_in_tuple = list(self.db.execute("SELECT ADMISSIONS.subject_id FROM ADMISSIONS "
                                                        "INNER JOIN PATIENTS ON ADMISSIONS.subject_id = PATIENTS.subject_id "
                                                        "WHERE ADMISSIONS.admittime - PATIENTS.dob > 15 "
@@ -151,7 +158,7 @@ class DataAccess(object):
         return result if result is None else result[0]
 
     def get_items_by_id_set(self, patient_id=None, id_set=set(), table_name="CHARTEVENTS",
-                            get_subjects=False, limit=None, offset=None, value_case=None):
+                            get_subjects=False, offset=None, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id, charttime, valuenum"
             subject_clause = ""
@@ -168,10 +175,10 @@ class DataAccess(object):
         else:
             offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
-        if limit is None:
+        if limit_parameter is None:
             limit_clause = ""
         else:
-            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit)
+            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit_parameter)
 
         error_clause = ""
         if table_name == "CHARTEVENTS":
@@ -180,7 +187,7 @@ class DataAccess(object):
         id_set = map(str, id_set)
         id_set_string = ", ".join(id_set)
 
-        query = ("SELECT {COLUMNS} "
+        query = ("SELECT {COLUMNS} "  #somehow need to make this so that select for the limited number of patients, not limit on data
                  "FROM {TABLE_NAME} "
                  "WHERE {ERROR_CLAUSE} ITEMID IN ({ID_SET}) "
                  "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {LIMIT_CLAUSE} {OFFSET_CLAUSE};") \
@@ -217,10 +224,10 @@ class DataAccess(object):
         else:
             offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
-        if limit is None:
+        if limit_parameter is None:
             limit_clause = ""
         else:
-            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit)
+            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit_parameter)
 
         id_set = map(str, id_set)
         id_set_string = ", ".join(id_set)
@@ -261,10 +268,10 @@ class DataAccess(object):
         else:
             offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
-        if limit is None:
+        if limit_parameter is None:
             limit_clause = ""
         else:
-            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit)
+            limit_clause = "LIMIT {LIMIT_NUM}".format(LIMIT_NUM=limit_parameter)
 
         id_set = map(lambda x: '"' + str(x) + '"', id_set)
         id_set_string = ", ".join(id_set)
@@ -455,49 +462,45 @@ class DataAccess(object):
                                                    " when valuenum > 100 then null "
                                                    " else valuenum end as valuenum")
 
-    def get_rrates(self, limit=None):
+    def get_rrates(self):
         item_ids = {
             3024171, 44818701, 8541, 615, 1635, 1151, 2117, 3603, 3337, 1884, 618, 220210, 224690
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, limit=limit)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
     def get_blood_sugar(self, limit=None):  # TODO: WRONG IDS
         item_ids = {
             3024171, 44818701, 8541, 615, 1635, 1151, 2117, 3603, 3337, 1884,
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, limit=limit)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
     def get_sodium(self, limit=None):  # TODO: WRONG IDS
         item_ids = {
             50824, 50983,
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, limit=limit)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
     def get_heart_rate(self, limit=None):
         item_ids = {
             51, 442, 455, 6701, 220179, 220050, 211, 220045
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, limit=limit)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
     def get_glucose(self, limit=None):
         item_ids = {
             807, 811, 1529, 3745, 3744, 225664, 220621, 226537,
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, limit=limit)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
     def get_mean_blood_pressure(self, limit=None):
         item_ids = {
             456, 52, 6702, 443, 220052, 220181, 225312,
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, limit=limit)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
-    '''def get_admit_time(self, limit=None):
-        return list(self.db.execute("SELECT SUBJECT_ID, ADMITTIME FROM ADMISSIONS "
-                                    "ORDER BY SUBJECT_ID;").fetchall())'''
-
-    def get_admit_time(self, limit=None):
+    def get_admit_time(self):
         # patients = self.data_access.get_patients()
-        patients = self.get_patients(limit=None)
+        patients = self.get_patients()
         admit_times = []
 
         # TODO: Perform a single query to get all admit times for all patient ids.
