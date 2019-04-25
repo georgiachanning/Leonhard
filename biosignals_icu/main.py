@@ -21,37 +21,60 @@ from biosignals_icu.data_access import DataAccess
 from biosignals_icu.program_args import Parameters
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
-from collections import defaultdict
 from sklearn.externals import joblib
+import sqlite3
+from os.path import join
 
 # use limits and offsets so that i can finish, also fix so that you dont query a million times for admit time
 # implement a program wide limit on patients
 
+
 class Application(object):
     def __init__(self):
+        # data_dir = self.program_args["dataset"]
+        data_dir = "/cluster/work/karlen/data/mimic3"
+        self.db = self.connect(data_dir)
         self.program_args = Parameters.parse_parameters()
-        data_dir = self.program_args["dataset"]
         self.dataset = DataSet(data_dir=data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
+        self.get_data()
+
         # limit = self.program_args["limit"]
         # self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data()
 
+    def connect(self, data_dir):
+        db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
+                             check_same_thread=False,
+                             detect_types=sqlite3.PARSE_DECLTYPES)
+        return db
+
     def get_data(self):
         time_frames = self.dataset.get_time_frame_per_patient()
+        args_for_all_patients = []
 
         if self.program_args["rrates" is True]:
             all_respiratory_rates = self.data_access.get_rrates()
             dict_with_rr_data = self.dataset.get_rr_data(time_frames, all_respiratory_rates)
+            args_for_all_patients.append(dict_with_rr_data)
         if self.program_args["alcohol" is True]:
             patients_with_alcohol_history = self.data_access.get_patients_with_alcohol_abuse()
-            dict_of_patients_alcohol_abuse = self.dataset.alcohol_abuse_binary_dictionary(patients_with_alcohol_history, dict_with_rr_data)
+            dict_of_patients_alcohol_abuse = self.dataset.alcohol_abuse_binary_dictionary(patients_with_alcohol_history,
+                                                                                          dict_with_rr_data)
+            args_for_all_patients.append(dict_of_patients_alcohol_abuse)
         if self.program_args["potassium" is True]:
             potassium_rates = self.data_access.get_potassium()
             dict_with_median_potassium_rates = self.dataset.get_potassium_data(potassium_rates, time_frames)
+            args_for_all_patients.append(dict_with_median_potassium_rates)
         if self.program_args["sodium" is True]:
             sodium_rates = self.data_access.get_sodium()
             dict_with_median_sodium_rates = self.dataset.get_sodium_data(sodium_rates, time_frames)
-        all_patients = self.dataset.make_all_patients()
+            args_for_all_patients.append(dict_with_median_sodium_rates)
+        if self.program_args["blood_pressure" is True]:
+            mean_blood_pressure_rates = self.data_access.get_mean_blood_pressure()
+            dict_with_blood_pressure = self.dataset.get_median_blood_pressure(mean_blood_pressure_rates, time_frames)
+            args_for_all_patients.append(dict_with_blood_pressure)
+
+        all_patients = self.dataset.make_all_patients(*args_for_all_patients)
         return all_patients
 
     def run(self):

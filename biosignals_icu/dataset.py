@@ -31,9 +31,9 @@ class DataSet(object):
 
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
-        self.dataset = DataSet(data_dir=data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
-        self.program_args = Parameters
+        # self.dataset = DataSet(data_dir=data_dir)
+        # self.program_args = Parameters
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataSet.DB_FILE_NAME),
@@ -139,6 +139,26 @@ class DataSet(object):
             else:
                 patients_with_alcohol_abuse_as_dict[key] = 0
         return patients_with_alcohol_abuse_as_dict
+
+    def get_median_blood_pressure(self, mean_blood_pressure_rates, end_windows):
+        per_patient = {}
+        blood_pressure_by_patient_id = {}
+        for (patient_id, measurement_time, feature_value) in mean_blood_pressure_rates:
+            measurement_time = parser.parse(measurement_time)
+            max_time_allowed = end_windows[patient_id]
+            if not measurement_time <= max_time_allowed:
+                continue
+
+            if isinstance(feature_value, float):  # Ensure there is a measurement number.
+                if patient_id in per_patient:
+                    per_patient[patient_id].append(feature_value)
+                else:
+                    per_patient[patient_id] = [feature_value]
+
+        for patient_id in per_patient.keys():
+            blood_pressure_by_patient_id[patient_id] = np.median(per_patient[patient_id])
+
+        return blood_pressure_by_patient_id
 
     def get_y(self, data_access, x):
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()

@@ -125,8 +125,12 @@ class DataAccess(object):
         return map(lambda x: x[0], self.db.execute("SELECT name FROM 'sqlite_master' WHERE type='table';").fetchall())
 
     def get_patients(self, limit):
-        patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS WHERE ROW_COUNT <= '{limit}' "
-                                                     "ORDER BY subject_id ;").__format__(limit=limit))
+        '''patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS WHERE _ROWID_ <= '{limit}' "
+                                                     "ORDER BY subject_id ;"
+                                                     .__format__(limit=limit)).fetchall()'''
+
+        patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS "
+                            "ORDER BY subject_id ;").fetchall())
         patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list
 
@@ -492,7 +496,8 @@ class DataAccess(object):
                                     "ORDER BY SUBJECT_ID;").fetchall())'''
 
     def get_admit_time(self, limit=None):
-        patients = self.data_access.get_patients()
+        # patients = self.data_access.get_patients()
+        patients = self.get_patients(limit=None)
         admit_times = []
 
         # TODO: Perform a single query to get all admit times for all patient ids.
@@ -537,8 +542,7 @@ class DataAccess(object):
             "42610", "42611", "42613", "4262", "42653", "4266", "42689", "4270", "4272", "42731", "42760", "4279",
             "7850"
         }
-        arrhythmias_in_tuples = self.get_items_by_icd(get_subjects=True, id_set=item_ids)
-        patients_with_arrhythmias = list(sum(arrhythmias_in_tuples, ()))
+        patients_with_arrhythmias = self.get_items_by_icd(get_subjects=True, id_set=item_ids)
         return patients_with_arrhythmias
 
     def get_patients_with_dyspnea(self):

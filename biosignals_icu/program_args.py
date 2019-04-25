@@ -89,7 +89,5 @@ class Parameters(Action):
                             help="include patient median potassium rates?")
         parser.add_argument("--sodium", default=False,
                             help="include patient median sodium rates?")
-
-
         return vars(parser.parse_args())
 
