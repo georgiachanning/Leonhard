@@ -47,7 +47,7 @@ class Parameters(Action):
                             help="num of features passed")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
-        parser.add_argument("--num_patients_to_load", default=15,
+        parser.add_argument("--num_patients_to_load", default=5,
                             help="how many patients' data should be loaded?")
 
         # following are all biosignals

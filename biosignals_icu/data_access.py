@@ -20,7 +20,6 @@ from __future__ import print_function
 import sqlite3
 from os.path import join
 from program_args import Parameters
-import numpy as np
 
 
 class DataAccess(object):
@@ -33,7 +32,9 @@ class DataAccess(object):
         limit_parameter = self.program_args["num_patients_to_load"]
 
         global loaded_patients
-        loaded_patients = self.get_patients()
+        loaded_patients_1 = self.get_patients()
+        loaded_patients_2 = map(str, loaded_patients_1)
+        loaded_patients = ", ".join(loaded_patients_2)
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -165,7 +166,7 @@ class DataAccess(object):
 
         if get_subjects:
             columns = "DISTINCT subject_id, charttime, valuenum"
-            subject_clause = "AND subject_id in {loaded_patients}".format(loaded_patients=loaded_patients)
+            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=loaded_patients)
             order_clause = ""
         else:
             columns = "charttime, valuenum" \
@@ -205,10 +206,10 @@ class DataAccess(object):
             return result
 
     def get_items_by_drug(self, patient_id=None, id_set=set(), table_name="PRESCRIPTIONS",
-                         get_subjects=True, limit=None, offset=None, value_case=None):
+                         get_subjects=True, offset=None, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id, startdate, enddate"
-            subject_clause = "AND subject_id in {loaded_patients}".format(loaded_patients=loaded_patients)
+            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=loaded_patients)
             order_clause = ""
         else:
             columns = "subject_id, drug" \
@@ -246,7 +247,7 @@ class DataAccess(object):
                          get_subjects=False, offset=None, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id"
-            subject_clause = "AND subject_id in {loaded_patients}".format(loaded_patients=loaded_patients)
+            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=loaded_patients)
             order_clause = ""
         else:
             columns = "subject_id, icd9_code" \
@@ -261,7 +262,7 @@ class DataAccess(object):
             offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
         id_set = map(lambda x: '"' + str(x) + '"', id_set)
-        id_set_string = ", ".join(id_set)
+        id_set_string = ", ".join(id_set)  # USE THIS TO MAKE THE FILTER FOR PATIENT ID
 
         query = ("SELECT {COLUMNS} "
                  "FROM {TABLE_NAME} "
@@ -485,7 +486,6 @@ class DataAccess(object):
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
     def get_admit_time(self):
-        # patients = self.data_access.get_patients()
         patients = self.get_patients()
         admit_times = []
 
