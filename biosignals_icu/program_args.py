@@ -47,7 +47,7 @@ class Parameters(Action):
                             help="num of features passed")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
-        parser.add_argument("--num_patients_to_load", default=1300,
+        parser.add_argument("--num_patients_to_load", default=5,
                             help="how many patients' data should be loaded?")
 
         # following are all biosignals
@@ -73,7 +73,7 @@ class Parameters(Action):
                             help="include whether patient is diagnosed with heart_failure")
         parser.add_argument("--muscular_dystrophy", default=False,
                             help="include whether patient is diagnosed with muscular dystrophy?")
-        parser.add_argument("--alcohol", default=False,
+        parser.add_argument("--alcohol", default=True,
                             help="include whether patient has history of alcohol abuse?")
         parser.add_argument("--epilespy", default=False,
                             help="include whether patient has history of epilespy?")
@@ -85,9 +85,11 @@ class Parameters(Action):
                             help="include whether patient has cardiac arrest?")
         parser.add_argument("--dyspnea", default=False,
                             help="include whether patient has dyspnea?")
-        parser.add_argument("--potassium", default=False,
+        parser.add_argument("--potassium", default=True,
                             help="include patient median potassium rates?")
-        parser.add_argument("--sodium", default=False,
+        parser.add_argument("--sodium", default=True,
                             help="include patient median sodium rates?")
+        parser.add_argument("--blood_pressure", default=True,
+                            help="include patient blood pressure?")
         return vars(parser.parse_args())
 

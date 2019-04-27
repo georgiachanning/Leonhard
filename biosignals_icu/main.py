@@ -24,9 +24,7 @@ import numpy as np
 from sklearn.externals import joblib
 import sqlite3
 from os.path import join
-
-# use limits and offsets so that i can finish, also fix so that you dont query a million times for admit time
-# implement a program wide limit on patients
+# implement offset
 
 
 class Application(object):
@@ -37,11 +35,8 @@ class Application(object):
         self.program_args = Parameters.parse_parameters()
         self.dataset = DataSet(data_dir=data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
-        a = self.data_access.get_admit_time()
-        b = self.data_access.get_mean_blood_pressure()
-        self.get_data()
-
-        # self.training_set, self.validation_set, self.input_shape, self.output_dim = self.get_data()
+        global all_patients_features
+        all_patients_features = self.get_data()
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -49,47 +44,51 @@ class Application(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
+    def getsample(self):
+        dict_1 = {1: 11, 2: 22, 3: 33, 4: 44, 5: 55}
+        dict_2 = {1: 1, 3: 9, 4: 16}
+        dict_3 = {4: 8, 5: 10, 2: 4}
+        dict_4 = {3: 0, 2: 0, 1: 0}
+        dict_5 = {5: 4820230, 4: 239840, 3: 497340}
+        args = {'a': dict_1, 'b': dict_2, 'c': dict_3, 'd': dict_4, 'e': dict_5}
+        self.dataset.make_all_patients(**args)
+
     def get_data(self):
         time_frames = self.dataset.get_time_frame_per_patient()
-        args_for_all_patients = []
+        args_for_all_patients = {}
 
         if self.program_args["rrates"] is True:
             all_respiratory_rates = self.data_access.get_rrates()
             dict_with_rr_data = self.dataset.get_rr_data(time_frames, all_respiratory_rates)
-            args_for_all_patients.append(dict_with_rr_data)
+            args_for_all_patients["rrates"] = dict_with_rr_data
         if self.program_args["alcohol"] is True:
             patients_with_alcohol_history = self.data_access.get_patients_with_alcohol_abuse()
             dict_of_patients_alcohol_abuse = self.dataset.alcohol_abuse_binary_dictionary(patients_with_alcohol_history,
                                                                                           dict_with_rr_data)
-            args_for_all_patients.append(dict_of_patients_alcohol_abuse)
+            args_for_all_patients["alcohol"] = dict_of_patients_alcohol_abuse
         if self.program_args["potassium"] is True:
             potassium_rates = self.data_access.get_potassium()
             dict_with_median_potassium_rates = self.dataset.get_potassium_data(potassium_rates, time_frames)
-            args_for_all_patients.append(dict_with_median_potassium_rates)
+            args_for_all_patients["potassium"] = dict_with_median_potassium_rates
         if self.program_args["sodium"] is True:
-            sodium_rates = self.data_access.get_sodium()
+            sodium_rates = self.data_access.get_sodium()  #this function is wrong
             dict_with_median_sodium_rates = self.dataset.get_sodium_data(sodium_rates, time_frames)
-            args_for_all_patients.append(dict_with_median_sodium_rates)
+            args_for_all_patients["sodium"] = dict_with_median_sodium_rates
         if self.program_args["blood_pressure"] is True:
             mean_blood_pressure_rates = self.data_access.get_mean_blood_pressure()
             dict_with_blood_pressure = self.dataset.get_median_blood_pressure(mean_blood_pressure_rates, time_frames)
-            args_for_all_patients.append(dict_with_blood_pressure)
+            args_for_all_patients["blood_pressure"] = dict_with_blood_pressure
 
-        all_patients = self.dataset.make_all_patients(*args_for_all_patients)
+        all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients
 
     def run(self):
         validation_set_fraction = float(self.program_args["validation_set_fraction"])
         test_set_fraction = float(self.program_args["test_set_fraction"])
 
-        patient_ids_with_arrhythmias = self.data_access.get_patients_with_arrhythmias()
-
-        rr = self.dataset.get_rr_data()
-        y_with_patient_id = self.dataset.get_y(self.data_access, rr)
+        y_with_patient_id = self.dataset.get_y(self.data_access, all_patients_features)
         y_true = self.dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
-        x = self.dataset.delete_patient_ids(rr)
-
-        # later should be x = dataset.delete_patient_ids(features_of_all_patients)
+        x = self.dataset.delete_patient_ids(all_patients_features)
 
         x_train, y_train, x_val, y_val, x_test, y_test = \
                 self.dataset.split(x, y_true,

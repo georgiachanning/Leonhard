@@ -24,6 +24,7 @@ import sqlite3
 from os.path import join
 from data_access import DataAccess
 from program_args import Parameters
+from collections import defaultdict
 
 
 class DataSet(object):
@@ -32,8 +33,7 @@ class DataSet(object):
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
-        # self.dataset = DataSet(data_dir=data_dir)
-        # self.program_args = Parameters
+        self.program_args = Parameters
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataSet.DB_FILE_NAME),
@@ -42,22 +42,23 @@ class DataSet(object):
         return db
 
     def make_all_patients(self, **kwargs):
-        # www.geeksforgeeks.org/args-kwargs-python/
-        num_features = self.program_args("num_features")
-        assert self.program_args("num_features") == len(kwargs)
+        num_features = len(kwargs)
+        # assert self.program_args("num_features") == len(kwargs)
 
-        all_patients = self.data_access.get_patients(limit=None)  # should be get adult patients
-        features_of_all_patients = {}
+        all_patients = self.data_access.get_patients()  # should be get adult patients
+        features_of_all_patients = defaultdict(list)
+        order_of_labels = []
 
-        for key in all_patients:
-            features_of_all_patients[key] = None*num_features
-
-        for each_feature in kwargs.values():
+        for each_feature in kwargs.keys():
             feature = kwargs[each_feature]
-            for patient in feature:
-                features_of_all_patients[patient] = feature[patient]
+            order_of_labels.append(each_feature)
+            for patient in all_patients:
+                if patient in feature:
+                    features_of_all_patients[patient].append(feature[patient])
+                else:
+                    features_of_all_patients[patient].append(0)
 
-        return features_of_all_patients
+        return features_of_all_patients, order_of_labels
 
     def get_time_frame_per_patient(self):
         admit_time = self.data_access.get_admit_time()
