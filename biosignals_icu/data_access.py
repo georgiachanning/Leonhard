@@ -28,8 +28,9 @@ class DataAccess(object):
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
         self.program_args = Parameters.parse_parameters()
-        global limit_parameter
+        global limit_parameter, offset_parameter
         limit_parameter = self.program_args["num_patients_to_load"]
+        offset_parameter = self.program_args["offset"]
 
         global loaded_patients
         loaded_patients = self.get_patients()
@@ -141,8 +142,8 @@ class DataAccess(object):
                                          .fetchall())
         else:
             patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id "
-                                                         "LIMIT {limit} ;"
-                                                         .format(limit=limit_parameter)))
+                                                         "LIMIT {limit} OFFSET {offset};"
+                                                         .format(limit=limit_parameter, offset=offset_parameter)))
 
         patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list

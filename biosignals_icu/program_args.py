@@ -43,12 +43,14 @@ class Parameters(Action):
                             help="max depth of each tree")
         parser.add_argument("--max_num_of_trees", default=5,
                             help="max num of trees in forest")
-        parser.add_argument("--num_features", default=1,
+        parser.add_argument("--num_features", default=5,
                             help="num of features passed")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
-        parser.add_argument("--num_patients_to_load", default=5,
+        parser.add_argument("--num_patients_to_load", default=2,
                             help="how many patients' data should be loaded?")
+        parser.add_argument("--offset", default=300,
+                            help="offset for number of patients to load")
 
         # following are all biosignals
         parser.add_argument("--heart_attacks", default=False,

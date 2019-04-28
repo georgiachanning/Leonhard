@@ -29,10 +29,9 @@ from os.path import join
 
 class Application(object):
     def __init__(self):
-        # data_dir = self.program_args["dataset"]
-        data_dir = "/cluster/work/karlen/data/mimic3"
-        self.db = self.connect(data_dir)
         self.program_args = Parameters.parse_parameters()
+        data_dir = self.program_args["dataset"]
+        self.db = self.connect(data_dir)
         self.dataset = DataSet(data_dir=data_dir)
         self.data_access = DataAccess(data_dir=data_dir)
         global all_patients_features
@@ -78,6 +77,10 @@ class Application(object):
             mean_blood_pressure_rates = self.data_access.get_mean_blood_pressure()
             dict_with_blood_pressure = self.dataset.get_median_blood_pressure(mean_blood_pressure_rates, time_frames)
             args_for_all_patients["blood_pressure"] = dict_with_blood_pressure
+        if self.program_args["quinine"] is True:
+            patients_with_quinine = self.data_access.get_patients_with_quinine()
+            dict_with_quinine = self.dataset.get_dict_with_quinine(patients_with_quinine, dict_with_rr_data)
+            args_for_all_patients["quinine"] = dict_with_quinine
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients
@@ -85,18 +88,20 @@ class Application(object):
     def run(self):
         validation_set_fraction = float(self.program_args["validation_set_fraction"])
         test_set_fraction = float(self.program_args["test_set_fraction"])
-
         y_with_patient_id = self.dataset.get_y(self.data_access, all_patients_features)
+
+        assert len(y_with_patient_id) == len(all_patients_features.keys())
+
         y_true = self.dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
         x = self.dataset.delete_patient_ids(all_patients_features)
 
         x_train, y_train, x_val, y_val, x_test, y_test = \
-                self.dataset.split(x, y_true,
-                                   validation_set_size=int(np.rint(validation_set_fraction*len(x))),
-                                   test_set_size=int(np.rint(test_set_fraction*len(x))))
+            self.dataset.split(x, y_true,
+                               validation_set_size=int(np.rint(validation_set_fraction*len(x))),
+                               test_set_size=int(np.rint(test_set_fraction*len(x))))
 
-        x_train = np.array(x_train).reshape(-1, 1)
-        x_test = np.array(x_test).reshape(-1, 1)
+        '''x_train = np.array(x_train).reshape(-1, 1)
+        x_test = np.array(x_test).reshape(-1, 1)'''
 
         rf = RandomForestClassifier()
         rf.fit(x_train, y_train)
@@ -112,26 +117,30 @@ class Application(object):
 
         # Compare y_test and y_pred
         from sklearn.metrics import roc_auc_score
+        from sklearn.metrics import f1_score
+        from sklearn.metrics import average_precision_score
 
-        y_pred = np.argmax(y_pred, axis=-1)
+        # y_pred = np.argmax(y_pred, axis=-1)
 
+        # auc_score = roc_auc_score(y_true, y_pred)
         auc_score = roc_auc_score(y_test, y_pred)
+        f1_score = f1_score(y_true, y_pred)
+        average_precision_score = average_precision_score(y_true, y_pred)
+
         with open(self.program_args["results_file"], "w") as results_file:
             print("AUC Score is", auc_score, file=results_file)
+            print("f1 Score is", f1_score, file=results_file)
+            print("Average Precision Score is", average_precision_score, file=results_file)
 
-        # sklearn.metrices.roc_auc_score
-        # sklearn.metrices.f1_score
-        # also average_precision_score
+        # sklearn.metrices.roc_auc_score: done
+        # sklearn.metrices.f1_score: done
+        # also average_precision_score: done
         # sensitivity or specificity must be also calculated (usually choose the one closest to top left (1,1) of
         # roc curve, choose this threshold of specificity and sensitivity)
         # y_score is predicted
         # read what different metrices do and try multiple
         # TODO: Program argument to switch between test set and validation set here.
         # TODO: filter children?
-        # https://github.com/MIT-LCP/mimic-code/blob/ddd4557423c6b0505be9b53d230863ef1ea78120/concepts/cookbook/potassium.sql
-        # contains filtering for adults
-
-        # TODO: Step 3 - save the model to an output directory and write the results to a file
 
         return
 
