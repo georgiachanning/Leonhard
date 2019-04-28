@@ -460,15 +460,15 @@ class DataAccess(object):
 
     def get_blood_sugar(self):  # TODO: WRONG IDS
         item_ids = {
-            3024171, 44818701, 8541, 615, 1635, 1151, 2117, 3603, 3337, 1884,
+            3024171, 44818701, 8541, 615, 1635, 1151, 2117, 3603, 3337, 1884, 456, 52, 6702, 443, 220052, 220181, 225312
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
 
-    def get_sodium(self):  # TODO: WRONG IDS
+    def get_sodium(self):
         item_ids = {
             50824, 50983,
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, table_name="LABEVENTS")
 
     def get_heart_rate(self):
         item_ids = {
@@ -520,10 +520,9 @@ class DataAccess(object):
     def get_potassium(self):
         item_ids = {
             3725, 1535, 829, 50883, 50971, 44711, 50822
-            # itemid IN (50822, 50971)
-            # make sure to filter out children
+
         }
-        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids)
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, table_name="LABEVENTS")
 
     # when icd9_code = '42610' then 1
     #     when icd9_code = '42611' then 1
@@ -627,37 +626,37 @@ class DataAccess(object):
 
     def get_dob(self):
         patient_and_dob = self.db.execute("SELECT subject_id, dob "
-                                             "FROM PATIENTS "
-                                             "ORDER BY subject_id ;"
+                                          "FROM PATIENTS "
+                                          "ORDER BY subject_id ;"
                                              ).fetchall()
         return map(lambda x: x[0], patient_and_dob)
 
     def get_gender(self):
         patient_and_gender = self.db.execute("SELECT subject_id, gender "
-                                                "FROM PATIENTS "
-                                                "ORDER BY subject_id ;"
+                                             "FROM PATIENTS "
+                                             "ORDER BY subject_id ;"
                                                 ).fetchall()
         return map(lambda x: x[0], patient_and_gender)
 
     def get_patients_with_terfenadine(self):
         terfenadine = self.db.execute("SELECT subject_id, startdate, enddate "
-                                     "FROM PRESCRIPTIONS "
-                                     "WHERE DRUG LIKE 'Terfenadine' "
-                                     "ORDER BY subject_id ;").fetchall()
+                                      "FROM PRESCRIPTIONS "
+                                      "WHERE DRUG LIKE 'Terfenadine' "
+                                      "ORDER BY subject_id ;").fetchall()
         return map(lambda x: x[0], terfenadine)
 
     def get_patients_with_astemizole(self):
         astemizole = self.db.execute("SELECT subject_id, startdate, enddate "
-                                        "FROM PRESCRIPTIONS "
-                                        "WHERE DRUG LIKE 'Astemizole' "
-                                        "ORDER BY subject_id ;").fetchall()
+                                     "FROM PRESCRIPTIONS "
+                                     "WHERE DRUG LIKE 'Astemizole' "
+                                     "ORDER BY subject_id ;").fetchall()
         return map(lambda x: x[0], astemizole)
 
     def get_patients_with_quinine(self):
         quinine = self.db.execute("SELECT subject_id, startdate, enddate "
-                                     "FROM PRESCRIPTIONS "
-                                     "WHERE DRUG LIKE 'Quinine' OR 'Quinoline'"
-                                     "ORDER BY subject_id ;").fetchall()
+                                  "FROM PRESCRIPTIONS "
+                                  "WHERE DRUG LIKE 'Quinine' OR 'Quinoline'"
+                                  "ORDER BY subject_id ;").fetchall()
         return map(lambda x: x[0], quinine)
 
 

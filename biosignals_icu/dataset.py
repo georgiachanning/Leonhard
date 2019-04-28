@@ -32,11 +32,11 @@ class DataSet(object):
 
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
-        self.data_access = DataAccess(data_dir=data_dir)
-        self.program_args = Parameters
+        self.data_access = DataAccess(data_dir)
+        self.program_args = Parameters.parse_parameters()
+
         global num_features
-        num_features = 5
-        # TODO: num_feautres = self.program_args("num_features")
+        num_features = self.program_args["num_features"]
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataSet.DB_FILE_NAME),
@@ -45,8 +45,7 @@ class DataSet(object):
         return db
 
     def make_all_patients(self, **kwargs):
-        num_features = len(kwargs)
-        # assert self.program_args("num_features") == len(kwargs)
+        assert num_features == len(kwargs)
 
         all_patients = self.data_access.get_patients()  # should be get adult patients
         features_of_all_patients = defaultdict(list)
@@ -135,14 +134,14 @@ class DataSet(object):
 
         return potassium_by_patient_id
 
-    def alcohol_abuse_binary_dictionary(self, patients_with_alcohol_abuse, x):
-        patients_with_alcohol_abuse_as_dict = {}
-        for key in x:
-            if key in patients_with_alcohol_abuse:
-                patients_with_alcohol_abuse_as_dict[key] = 1
+    def binary_data_to_dict(self, patients_with_feature, x):
+        patients_with_feature_as_dict = {}
+        for patient in x:
+            if patient in patients_with_feature:
+                patients_with_feature_as_dict[patient] = 1
             else:
-                patients_with_alcohol_abuse_as_dict[key] = 0
-        return patients_with_alcohol_abuse_as_dict
+                patients_with_feature_as_dict[patient] = 0
+        return patients_with_feature_as_dict
 
     def get_median_blood_pressure(self, mean_blood_pressure_rates, end_windows):
         per_patient = {}
@@ -163,15 +162,6 @@ class DataSet(object):
             blood_pressure_by_patient_id[patient_id] = np.median(per_patient[patient_id])
 
         return blood_pressure_by_patient_id
-
-    def get_dict_with_quinine(self, patients_with_quinine, x):
-        patients_with_quinine_as_dict = {}
-        for key in x:
-            if key in patients_with_quinine:
-                patients_with_quinine_as_dict[key] = 1
-            else:
-                patients_with_quinine_as_dict[key] = 0
-        return patients_with_quinine_as_dict
 
     def get_y(self, data_access, x):
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()

@@ -32,8 +32,11 @@ class Application(object):
         self.program_args = Parameters.parse_parameters()
         data_dir = self.program_args["dataset"]
         self.db = self.connect(data_dir)
-        self.dataset = DataSet(data_dir=data_dir)
-        self.data_access = DataAccess(data_dir=data_dir)
+        self.dataset = DataSet(data_dir)
+        self.data_access = DataAccess(data_dir)
+        global loaded_patients
+        loaded_patients = self.data_access.get_patients()
+
         global all_patients_features
         all_patients_features = self.get_data()
 
@@ -62,8 +65,8 @@ class Application(object):
             args_for_all_patients["rrates"] = dict_with_rr_data
         if self.program_args["alcohol"] is True:
             patients_with_alcohol_history = self.data_access.get_patients_with_alcohol_abuse()
-            dict_of_patients_alcohol_abuse = self.dataset.alcohol_abuse_binary_dictionary(patients_with_alcohol_history,
-                                                                                          dict_with_rr_data)
+            dict_of_patients_alcohol_abuse = self.dataset.binary_data_to_dict(patients_with_alcohol_history,
+                                                                              loaded_patients)
             args_for_all_patients["alcohol"] = dict_of_patients_alcohol_abuse
         if self.program_args["potassium"] is True:
             potassium_rates = self.data_access.get_potassium()
@@ -79,8 +82,24 @@ class Application(object):
             args_for_all_patients["blood_pressure"] = dict_with_blood_pressure
         if self.program_args["quinine"] is True:
             patients_with_quinine = self.data_access.get_patients_with_quinine()
-            dict_with_quinine = self.dataset.get_dict_with_quinine(patients_with_quinine, dict_with_rr_data)
+            dict_with_quinine = self.dataset.binary_data_to_dict(patients_with_quinine, loaded_patients)
             args_for_all_patients["quinine"] = dict_with_quinine
+        if self.program_args["astemizole"] is True:
+            patients_with_astemizole = self.data_access.get_patients_with_astemizole()
+            dict_with_astemizole = self.dataset.binary_data_to_dict(patients_with_astemizole, loaded_patients)
+            args_for_all_patients["astemizole"] = dict_with_astemizole
+        if self.program_args["terfenadine"] is True:
+            patients_with_terfenadine = self.data_access.get_patients_with_terfenadine()
+            dict_with_terfenadine = self.dataset.binary_data_to_dict(patients_with_terfenadine, loaded_patients)
+            args_for_all_patients["terfenadine"] = dict_with_terfenadine
+        if self.program_args["pulmonary_circulation_disorder"] is True:
+            patients_with_pcd = self.data_access.get_patients_with_pulmonary_circulation_disorder()
+            dict_with_pcd = self.dataset.binary_data_to_dict(patients_with_pcd, loaded_patients)
+            args_for_all_patients["pcd"] = dict_with_pcd
+        if self.program_args["lung_disease"] is True:
+            patients_with_lung_disease = self.data_access.get_patients_with_lung_disease()
+            dict_with_lung_disease = self.dataset.binary_data_to_dict(patients_with_lung_disease, loaded_patients)
+            args_for_all_patients["lung_disease"] = dict_with_lung_disease
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients

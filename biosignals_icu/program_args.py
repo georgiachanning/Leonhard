@@ -43,7 +43,7 @@ class Parameters(Action):
                             help="max depth of each tree")
         parser.add_argument("--max_num_of_trees", default=5,
                             help="max num of trees in forest")
-        parser.add_argument("--num_features", default=5,
+        parser.add_argument("--num_features", default=6,
                             help="num of features passed")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
@@ -67,7 +67,7 @@ class Parameters(Action):
                             help="include whether patient is prescribed terfenadine?")
         parser.add_argument("--pulmonary_circulation_disorder", default=False,
                             help="include whether patient is diagnosed with lung disease?")
-        parser.add_argument("--lung_disease", default=False,
+        parser.add_argument("--lung_disease", default=True,
                             help="include whether patient is diagnosed with pulmonary circulation disorder?")
         parser.add_argument("--renal_failure", default=False,
                             help="include whether patient is diagnosed with renal failure?")
