@@ -34,7 +34,6 @@ class Application(object):
         self.db = self.connect(data_dir)
         self.dataset = DataSet(data_dir)
         self.data_access = DataAccess(data_dir)
-
         self.loaded_patients = self.data_access.get_patients()
         self.all_patients_features = self.get_data()
 

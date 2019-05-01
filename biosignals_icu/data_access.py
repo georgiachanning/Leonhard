@@ -170,8 +170,24 @@ class DataAccess(object):
 
         id_set = map(str, id_set)
         id_set_string = ", ".join(id_set)
+        data = []
 
-        query = ("SELECT {COLUMNS} "
+        for patient in self.loaded_patients:
+            query_per_patient = ("SELECT {COLUMNS} "
+                                 "FROM {TABLE_NAME} "
+                                 "WHERE subject_id = {patient} AND ITEMID IN ({ID_SET}); ")\
+                .format(COLUMNS=columns, TABLE_NAME=table_name,
+                        ID_SET=id_set_string,
+                        offset=self.offset_parameter,
+                        limit=self.limit_parameter,
+                        patient=patient)
+            data.append(self.db.execute(query_per_patient).fetchall())
+
+        flat_data = [item for sublist in data for item in sublist]
+
+        return flat_data
+
+        '''query = ("SELECT {COLUMNS} "
                  "FROM {TABLE_NAME} "
                  "WHERE subject_id IN (SELECT DISTINCT subject_id FROM PATIENTS "
                  "ORDER BY SUBJECT_ID LIMIT {limit} OFFSET {offset}) "
@@ -187,7 +203,7 @@ class DataAccess(object):
         if value_case is not None:
             return filter(lambda x: x[1] is not None, result)
         else:
-            return result
+            return result'''
 
     def get_items_by_drug(self, patient_id=None, id_set=set(), table_name="PRESCRIPTIONS",
                          get_subjects=True, offset=None, value_case=None):

@@ -174,7 +174,11 @@ class DataSet(object):
             print("Error: Dataset was empty.")
             return None
 
-        expected_num_features = len(data_set.values())
+        print(data_set.values()[0])
+        if isinstance(data_set.values()[0], int):
+            expected_num_features = 1
+        else:
+            expected_num_features = len(data_set.values()[0])
         processed_data_set = np.zeros(shape=(len(data_set), expected_num_features))
         for i in range(len(data_set)):
             key = sorted(data_set.keys())[i]

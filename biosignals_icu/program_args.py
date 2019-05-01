@@ -47,7 +47,7 @@ class Parameters(Action):
                             help="max num of trees in forest")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
-        parser.add_argument("--num_patients_to_load", default=20,
+        parser.add_argument("--num_patients_to_load", default=30,
                             help="how many patients' data should be loaded?")
         parser.add_argument("--offset", default=0,
                             help="offset for number of patients to load")
