@@ -28,8 +28,8 @@ class DataAccess(object):
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
         self.program_args = Parameters.parse_parameters()
-        self.limit_parameter = self.program_args["num_patients_to_load"]
-        self.offset_parameter = self.program_args["offset"]
+        self.limit_parameter = int(self.program_args["num_patients_to_load"])
+        self.offset_parameter = int(self.program_args["offset"])
         self.loaded_patients = self.get_patients()
         loaded_patients_interim = map(str, self.loaded_patients)
         self.loaded_patients_string = ", ".join(loaded_patients_interim)
@@ -160,43 +160,28 @@ class DataAccess(object):
 
         return result if result is None else result[0]
 
-    def get_items_by_id_set(self, patient_id=None, id_set=set(), table_name="CHARTEVENTS",
-                            get_subjects=False, offset=None, value_case=None):
+    def get_items_by_id_set(self, id_set=set(), table_name="CHARTEVENTS",
+                            get_subjects=False, value_case=None):
 
         if get_subjects:
             columns = "DISTINCT subject_id, charttime, valuenum"
-            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=self.loaded_patients_string)
-            order_clause = ""
         else:
             columns = "charttime, valuenum" \
-                if value_case is None else \
-                "charttime, {VALUE_CASE}".format(VALUE_CASE=value_case)
-            subject_clause = "AND SUBJECT_ID = '{SUBJECT_ID}'".format(SUBJECT_ID=patient_id)
-            order_clause = " ORDER BY charttime "
-
-        if offset is None:
-            offset_clause = ""
-        else:
-            offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
-
-        error_clause = ""
-        if table_name == "CHARTEVENTS":
-            error_clause = "{TABLE_NAME}.error IS NOT 1 AND ".format(TABLE_NAME=table_name)
 
         id_set = map(str, id_set)
         id_set_string = ", ".join(id_set)
 
         query = ("SELECT {COLUMNS} "
                  "FROM {TABLE_NAME} "
-                 "WHERE {ERROR_CLAUSE} ITEMID IN ({ID_SET}) "
-                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {OFFSET_CLAUSE};") \
+                 "WHERE subject_id IN (SELECT DISTINCT subject_id FROM PATIENTS "
+                 "ORDER BY SUBJECT_ID LIMIT {limit} OFFSET {offset}) "
+                 "AND ITEMID IN ({ID_SET}); ") \
             .format(COLUMNS=columns,
                     TABLE_NAME=table_name,
                     ID_SET=id_set_string,
-                    ERROR_CLAUSE=error_clause,
-                    SUBJECT_CLAUSE=subject_clause,
-                    ORDER_CLAUSE=order_clause,
-                    OFFSET_CLAUSE=offset_clause)
+                    offset=self.offset_parameter,
+                    limit=self.limit_parameter)
+
         result = self.db.execute(query).fetchall()
 
         if value_case is not None:

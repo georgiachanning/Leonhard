@@ -33,6 +33,8 @@ class Parameters(Action):
                             help="Would you like to use the test, validation or train set?")
         parser.add_argument("--importances_file", default="/cluster/work/karlen/georgiachanning/importances.npz",
                             help="where should the output go?")
+        parser.add_argument("--order_of_features_file", default="/cluster/work/karlen/georgiachanning/label_order.txt",
+                            help="file where order of labels is saved")
         parser.add_argument("--model_file", default="/cluster/work/karlen/georgiachanning/model.pkl",
                             help="where should the output go?")
         parser.add_argument("--results_file", default="/cluster/work/karlen/georgiachanning/results.txt",
@@ -43,13 +45,11 @@ class Parameters(Action):
                             help="max depth of each tree")
         parser.add_argument("--max_num_of_trees", default=50,
                             help="max num of trees in forest")
-        parser.add_argument("--num_features", default=2,
-                            help="num of features passed")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
         parser.add_argument("--num_patients_to_load", default=20,
                             help="how many patients' data should be loaded?")
-        parser.add_argument("--offset", default=300,
+        parser.add_argument("--offset", default=0,
                             help="offset for number of patients to load")
 
         # following are all biosignals

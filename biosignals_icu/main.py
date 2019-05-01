@@ -105,6 +105,7 @@ class Application(object):
             args_for_all_patients["renal_failure"] = dict_with_renal_failure
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
+        np.savez(self.program_args["order_of_features_file"], order_of_labels)
         return all_patients
 
     def run(self):
@@ -122,20 +123,17 @@ class Application(object):
                                validation_set_size=int(np.rint(validation_set_fraction*len(x))),
                                test_set_size=int(np.rint(test_set_fraction*len(x))))
 
-        '''x_train = np.array(x_train).reshape(-1, 1)
-        x_test = np.array(x_test).reshape(-1, 1)'''
-
         rf = RandomForestClassifier()
         rf.fit(x_train, y_train)
 
         y_pred = rf.predict_proba(x_test)
         feature_importance = rf.feature_importances_
-        # save order so that we know which is which
 
         # saving output and model
-        joblib.dump(rf, self.program_args["model_file"])  # want directory, not one file to be written over
+        joblib.dump(rf, self.program_args["model_file"])
         np.savez(self.program_args["importances_file"], feature_importance)
         np.savez(self.program_args["predictions_file"], y_pred)
+
 
         # Compare y_test and y_pred
         from sklearn.metrics import roc_auc_score
