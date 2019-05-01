@@ -41,13 +41,13 @@ class Parameters(Action):
                             help="where should the output go?")
         parser.add_argument("--max_depth_of_trees", default=5,
                             help="max depth of each tree")
-        parser.add_argument("--max_num_of_trees", default=5,
+        parser.add_argument("--max_num_of_trees", default=50,
                             help="max num of trees in forest")
-        parser.add_argument("--num_features", default=6,
+        parser.add_argument("--num_features", default=2,
                             help="num of features passed")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
-        parser.add_argument("--num_patients_to_load", default=2,
+        parser.add_argument("--num_patients_to_load", default=20,
                             help="how many patients' data should be loaded?")
         parser.add_argument("--offset", default=300,
                             help="offset for number of patients to load")
@@ -55,7 +55,7 @@ class Parameters(Action):
         # following are all biosignals
         parser.add_argument("--heart_attacks", default=False,
                             help="include heart attack as feature")
-        parser.add_argument("--rrates", default=True,
+        parser.add_argument("--rrates", default=False,
                             help="include respiratory rates?")
         parser.add_argument("--cocaine", default=False,
                             help="include cocaine history?")
@@ -75,7 +75,7 @@ class Parameters(Action):
                             help="include whether patient is diagnosed with heart_failure")
         parser.add_argument("--muscular_dystrophy", default=False,
                             help="include whether patient is diagnosed with muscular dystrophy?")
-        parser.add_argument("--alcohol", default=True,
+        parser.add_argument("--alcohol", default=False,
                             help="include whether patient has history of alcohol abuse?")
         parser.add_argument("--epilespy", default=False,
                             help="include whether patient has history of epilespy?")
@@ -87,9 +87,9 @@ class Parameters(Action):
                             help="include whether patient has cardiac arrest?")
         parser.add_argument("--dyspnea", default=False,
                             help="include whether patient has dyspnea?")
-        parser.add_argument("--potassium", default=True,
+        parser.add_argument("--potassium", default=False,
                             help="include patient median potassium rates?")
-        parser.add_argument("--sodium", default=True,
+        parser.add_argument("--sodium", default=False,
                             help="include patient median sodium rates?")
         parser.add_argument("--blood_pressure", default=True,
                             help="include patient blood pressure?")

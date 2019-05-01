@@ -35,9 +35,6 @@ class DataSet(object):
         self.data_access = DataAccess(data_dir)
         self.program_args = Parameters.parse_parameters()
 
-        global num_features
-        num_features = self.program_args["num_features"]
-
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataSet.DB_FILE_NAME),
                              check_same_thread=False,
@@ -45,7 +42,6 @@ class DataSet(object):
         return db
 
     def make_all_patients(self, **kwargs):
-        assert num_features == len(kwargs)
 
         all_patients = self.data_access.get_patients()  # should be get adult patients
         features_of_all_patients = defaultdict(list)
@@ -174,7 +170,12 @@ class DataSet(object):
         return y
 
     def delete_patient_ids(self, data_set):
-        processed_data_set = np.zeros(shape=(len(data_set), num_features))
+        if len(data_set) == 0:
+            print("Error: Dataset was empty.")
+            return None
+
+        expected_num_features = len(data_set.values()[0])
+        processed_data_set = np.zeros(shape=(len(data_set), expected_num_features))
         for i in range(len(data_set)):
             key = sorted(data_set.keys())[i]
             value = data_set[key]

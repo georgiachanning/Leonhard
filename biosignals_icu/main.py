@@ -34,11 +34,9 @@ class Application(object):
         self.db = self.connect(data_dir)
         self.dataset = DataSet(data_dir)
         self.data_access = DataAccess(data_dir)
-        global loaded_patients
-        loaded_patients = self.data_access.get_patients()
 
-        global all_patients_features
-        all_patients_features = self.get_data()
+        self.loaded_patients = self.data_access.get_patients()
+        self.all_patients_features = self.get_data()
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -66,14 +64,14 @@ class Application(object):
         if self.program_args["alcohol"] is True:
             patients_with_alcohol_history = self.data_access.get_patients_with_alcohol_abuse()
             dict_of_patients_alcohol_abuse = self.dataset.binary_data_to_dict(patients_with_alcohol_history,
-                                                                              loaded_patients)
+                                                                              self.loaded_patients)
             args_for_all_patients["alcohol"] = dict_of_patients_alcohol_abuse
         if self.program_args["potassium"] is True:
             potassium_rates = self.data_access.get_potassium()
             dict_with_median_potassium_rates = self.dataset.get_potassium_data(potassium_rates, time_frames)
             args_for_all_patients["potassium"] = dict_with_median_potassium_rates
         if self.program_args["sodium"] is True:
-            sodium_rates = self.data_access.get_sodium()  #this function is wrong
+            sodium_rates = self.data_access.get_sodium()
             dict_with_median_sodium_rates = self.dataset.get_sodium_data(sodium_rates, time_frames)
             args_for_all_patients["sodium"] = dict_with_median_sodium_rates
         if self.program_args["blood_pressure"] is True:
@@ -82,24 +80,29 @@ class Application(object):
             args_for_all_patients["blood_pressure"] = dict_with_blood_pressure
         if self.program_args["quinine"] is True:
             patients_with_quinine = self.data_access.get_patients_with_quinine()
-            dict_with_quinine = self.dataset.binary_data_to_dict(patients_with_quinine, loaded_patients)
+            dict_with_quinine = self.dataset.binary_data_to_dict(patients_with_quinine, self.loaded_patients)
             args_for_all_patients["quinine"] = dict_with_quinine
         if self.program_args["astemizole"] is True:
             patients_with_astemizole = self.data_access.get_patients_with_astemizole()
-            dict_with_astemizole = self.dataset.binary_data_to_dict(patients_with_astemizole, loaded_patients)
+            dict_with_astemizole = self.dataset.binary_data_to_dict(patients_with_astemizole, self.loaded_patients)
             args_for_all_patients["astemizole"] = dict_with_astemizole
         if self.program_args["terfenadine"] is True:
             patients_with_terfenadine = self.data_access.get_patients_with_terfenadine()
-            dict_with_terfenadine = self.dataset.binary_data_to_dict(patients_with_terfenadine, loaded_patients)
+            dict_with_terfenadine = self.dataset.binary_data_to_dict(patients_with_terfenadine, self.loaded_patients)
             args_for_all_patients["terfenadine"] = dict_with_terfenadine
         if self.program_args["pulmonary_circulation_disorder"] is True:
             patients_with_pcd = self.data_access.get_patients_with_pulmonary_circulation_disorder()
-            dict_with_pcd = self.dataset.binary_data_to_dict(patients_with_pcd, loaded_patients)
+            dict_with_pcd = self.dataset.binary_data_to_dict(patients_with_pcd, self.loaded_patients)
             args_for_all_patients["pcd"] = dict_with_pcd
         if self.program_args["lung_disease"] is True:
             patients_with_lung_disease = self.data_access.get_patients_with_lung_disease()
-            dict_with_lung_disease = self.dataset.binary_data_to_dict(patients_with_lung_disease, loaded_patients)
+            dict_with_lung_disease = self.dataset.binary_data_to_dict(patients_with_lung_disease, self.loaded_patients)
             args_for_all_patients["lung_disease"] = dict_with_lung_disease
+        if self.program_args["renal_failure"] is True:
+            patients_with_renal_failure = self.data_access.get_patients_with_renal_failure()
+            dict_with_renal_failure = self.dataset.binary_data_to_dict(patients_with_renal_failure,
+                                                                       self.loaded_patients)
+            args_for_all_patients["renal_failure"] = dict_with_renal_failure
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients
@@ -107,12 +110,12 @@ class Application(object):
     def run(self):
         validation_set_fraction = float(self.program_args["validation_set_fraction"])
         test_set_fraction = float(self.program_args["test_set_fraction"])
-        y_with_patient_id = self.dataset.get_y(self.data_access, all_patients_features)
+        y_with_patient_id = self.dataset.get_y(self.data_access, self.all_patients_features)
 
-        assert len(y_with_patient_id) == len(all_patients_features.keys())
+        assert len(y_with_patient_id) == len(self.all_patients_features.keys())
 
         y_true = self.dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
-        x = self.dataset.delete_patient_ids(all_patients_features)
+        x = self.dataset.delete_patient_ids(self.all_patients_features)
 
         x_train, y_train, x_val, y_val, x_test, y_test = \
             self.dataset.split(x, y_true,

@@ -28,16 +28,11 @@ class DataAccess(object):
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
         self.program_args = Parameters.parse_parameters()
-        global limit_parameter, offset_parameter
-        limit_parameter = self.program_args["num_patients_to_load"]
-        offset_parameter = self.program_args["offset"]
-
-        global loaded_patients
-        loaded_patients = self.get_patients()
-        loaded_patients_interim = map(str, loaded_patients)
-
-        global loaded_patients_string
-        loaded_patients_string = ", ".join(loaded_patients_interim)
+        self.limit_parameter = self.program_args["num_patients_to_load"]
+        self.offset_parameter = self.program_args["offset"]
+        self.loaded_patients = self.get_patients()
+        loaded_patients_interim = map(str, self.loaded_patients)
+        self.loaded_patients_string = ", ".join(loaded_patients_interim)
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -137,21 +132,22 @@ class DataAccess(object):
 
     def get_patients(self):
 
-        if limit_parameter is None:
+        if self.limit_parameter is None:
             patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id;")
                                          .fetchall())
         else:
             patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id "
                                                          "LIMIT {limit} OFFSET {offset};"
-                                                         .format(limit=limit_parameter, offset=offset_parameter)))
+                                                         .format(limit=self.limit_parameter, offset=self.offset_parameter)))
 
         patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list
 
-    def get_adult_patients(self):  # also needs limit!!
-        adult_patients_in_tuple = list(self.db.execute("SELECT ADMISSIONS.subject_id FROM ADMISSIONS "
-                                                       "INNER JOIN PATIENTS ON ADMISSIONS.subject_id = PATIENTS.subject_id "
-                                                       "WHERE ADMISSIONS.admittime - PATIENTS.dob > 15 "
+    def get_adult_patients(self):
+        adult_patients_in_tuple = list(self.db.execute("SELECT ADMISSIONS.SUBJECT_ID FROM ADMISSIONS "
+                                                       "INNER JOIN PATIENTS ON "
+                                                       "ADMISSIONS.SUBJECT_ID = PATIENTS.SUBJECT_ID "
+                                                       "WHERE ADMISSIONS.admittime - PATIENTS.DOB > 15 "
                                                        "ORDER BY subject_id ;"))
         adult_patient_list = list(sum(adult_patients_in_tuple, ()))
         return adult_patient_list
@@ -169,7 +165,7 @@ class DataAccess(object):
 
         if get_subjects:
             columns = "DISTINCT subject_id, charttime, valuenum"
-            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=loaded_patients_string)
+            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=self.loaded_patients_string)
             order_clause = ""
         else:
             columns = "charttime, valuenum" \
@@ -212,7 +208,7 @@ class DataAccess(object):
                          get_subjects=True, offset=None, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id, startdate, enddate"
-            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=loaded_patients_string)
+            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=self.loaded_patients_string)
             order_clause = ""
         else:
             columns = "subject_id, drug" \
@@ -250,7 +246,7 @@ class DataAccess(object):
                          get_subjects=False, offset=None, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id"
-            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=loaded_patients_string)
+            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=self.loaded_patients_string)
             order_clause = ""
         else:
             columns = "subject_id, icd9_code" \
@@ -494,12 +490,12 @@ class DataAccess(object):
         query = ( "SELECT SUBJECT_ID, ADMITTIME, HADM_ID "
                   "FROM ADMISSIONS "
                   "WHERE ADMISSIONS.subject_id IN ({loaded_patients}) "
-                  "ORDER BY ADMITTIME DESC ;").format(loaded_patients=loaded_patients_string)
+                  "ORDER BY ADMITTIME DESC ;").format(loaded_patients=self.loaded_patients_string)
         # arranged in descending order because when put into dictionary order will be reversed
 
         all_admit_times = self.db.execute(query).fetchall()
 
-        for patient in loaded_patients:
+        for patient in self.loaded_patients:
             for admittime in range(len(all_admit_times)):
                 if patient == all_admit_times[admittime][0]:
                     admit_times[patient] = all_admit_times[admittime][1]
@@ -513,7 +509,7 @@ class DataAccess(object):
                          "42653, 4266, 42689, 4270, 4272, 42731, 42760, 4279, 7850);").format(patient_id=patient)
                 admit_times[patient] = self.db.execute(query).fetchone()[0]
 
-        assert len(loaded_patients) == len(admit_times)
+        assert len(self.loaded_patients) == len(admit_times)
 
         return admit_times
 
