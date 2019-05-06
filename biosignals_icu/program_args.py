@@ -47,10 +47,12 @@ class Parameters(Action):
                             help="max num of trees in forest")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
-        parser.add_argument("--num_patients_to_load", default=30,
+        parser.add_argument("--num_patients_to_load", default=8000,
                             help="how many patients' data should be loaded?")
-        parser.add_argument("--offset", default=0,
+        parser.add_argument("--offset", default=300,
                             help="offset for number of patients to load")
+        parser.add_argument("--split", default="train",
+                            help="train, test, or validate?")
 
         # following are all biosignals
         parser.add_argument("--heart_attacks", default=False,
@@ -75,7 +77,7 @@ class Parameters(Action):
                             help="include whether patient is diagnosed with heart_failure")
         parser.add_argument("--muscular_dystrophy", default=False,
                             help="include whether patient is diagnosed with muscular dystrophy?")
-        parser.add_argument("--alcohol", default=False,
+        parser.add_argument("--alcohol", default=True,
                             help="include whether patient has history of alcohol abuse?")
         parser.add_argument("--epilespy", default=False,
                             help="include whether patient has history of epilespy?")
@@ -87,7 +89,7 @@ class Parameters(Action):
                             help="include whether patient has cardiac arrest?")
         parser.add_argument("--dyspnea", default=False,
                             help="include whether patient has dyspnea?")
-        parser.add_argument("--potassium", default=False,
+        parser.add_argument("--potassium", default=True,
                             help="include patient median potassium rates?")
         parser.add_argument("--sodium", default=False,
                             help="include patient median sodium rates?")

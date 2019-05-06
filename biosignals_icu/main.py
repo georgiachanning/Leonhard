@@ -24,7 +24,6 @@ import numpy as np
 from sklearn.externals import joblib
 import sqlite3
 from os.path import join
-# implement offset
 
 
 class Application(object):
@@ -35,7 +34,8 @@ class Application(object):
         self.dataset = DataSet(data_dir)
         self.data_access = DataAccess(data_dir)
         self.loaded_patients = self.data_access.get_patients()
-        self.all_patients_features = self.get_data()
+        a = self.loaded_patients
+        a = 5
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -104,18 +104,20 @@ class Application(object):
             args_for_all_patients["renal_failure"] = dict_with_renal_failure
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
-        np.savez(self.program_args["order_of_features_file"], order_of_labels)
-        return all_patients
+        return all_patients, order_of_labels
 
     def run(self):
+
+        all_patients_features, order_of_labels = self.get_data()
+
         validation_set_fraction = float(self.program_args["validation_set_fraction"])
         test_set_fraction = float(self.program_args["test_set_fraction"])
-        y_with_patient_id = self.dataset.get_y(self.data_access, self.all_patients_features)
+        y_with_patient_id = self.dataset.get_y(self.data_access, all_patients_features)
 
-        assert len(y_with_patient_id) == len(self.all_patients_features.keys())
+        assert len(y_with_patient_id) == len(all_patients_features.keys())
 
         y_true = self.dataset.delete_patient_ids(y_with_patient_id)  # this function returns np.array
-        x = self.dataset.delete_patient_ids(self.all_patients_features)
+        x = self.dataset.delete_patient_ids(all_patients_features)
 
         x_train, y_train, x_val, y_val, x_test, y_test = \
             self.dataset.split(x, y_true,
@@ -123,9 +125,24 @@ class Application(object):
                                test_set_size=int(np.rint(test_set_fraction*len(x))))
 
         rf = RandomForestClassifier()
-        rf.fit(x_train, y_train)
 
-        y_pred = rf.predict_proba(x_test)
+        # which split of data
+        if self.program_args["split"] == "train":
+            rf.fit(x_train, y_train)
+            x_data = x_train
+            y_data = y_train
+
+        if self.program_args["split"] == "validate":
+            rf.fit(x_val, y_val)
+            x_data = x_val
+            y_data = y_val
+
+        if self.program_args["split"] == "test":
+            rf.fit(x_test, y_test)
+            x_data = x_test
+            y_data = y_test
+
+        y_pred = rf.predict_proba(x_data)
         feature_importance = rf.feature_importances_
 
         # saving output and model
@@ -133,32 +150,41 @@ class Application(object):
         np.savez(self.program_args["importances_file"], feature_importance)
         np.savez(self.program_args["predictions_file"], y_pred)
 
-
         # Compare y_test and y_pred
         from sklearn.metrics import roc_auc_score
         from sklearn.metrics import f1_score
         from sklearn.metrics import average_precision_score
+        from sklearn.metrics import recall_score
+        from sklearn.metrics import accuracy_score
+        from sklearn.metrics import hamming_loss
+        from sklearn.metrics import roc_curve
 
-        # y_pred = np.argmax(y_pred, axis=-1)
-
-        # auc_score = roc_auc_score(y_true, y_pred)
-        auc_score = roc_auc_score(y_test, y_pred)
-        f1_score = f1_score(y_true, y_pred)
-        average_precision_score = average_precision_score(y_true, y_pred)
+        y_pred = np.argmax(y_pred, axis=-1)
+        auc_score = roc_auc_score(y_data, y_pred)
+        f1_score = f1_score(y_data, y_pred)
+        average_precision_score = average_precision_score(y_data, y_pred)
+        recall_score = recall_score(y_data, y_pred)
+        accuracy_score = accuracy_score(y_data, y_pred)
+        hamming_loss = hamming_loss(y_data, y_pred)
+        one_minus_specificity, sensitivity, thresholds = roc_curve(y_data, y_pred)
 
         with open(self.program_args["results_file"], "w") as results_file:
             print("AUC Score is", auc_score, file=results_file)
             print("f1 Score is", f1_score, file=results_file)
             print("Average Precision Score is", average_precision_score, file=results_file)
+            print("Recall Score is", recall_score, file=results_file)
+            print("Accuracy Score is", accuracy_score, file=results_file)
+            print("Hamming Loss is", hamming_loss, file=results_file)
+            print("Specificity is", 1-one_minus_specificity, file=results_file)
+            print("Sensitivity is", sensitivity, file=results_file)
+            print("Order of Labels: ", order_of_labels, file=results_file)
+            print("Feature Importances: ", feature_importance, file=results_file)
 
-        # sklearn.metrices.roc_auc_score: done
-        # sklearn.metrices.f1_score: done
-        # also average_precision_score: done
         # sensitivity or specificity must be also calculated (usually choose the one closest to top left (1,1) of
+
         # roc curve, choose this threshold of specificity and sensitivity)
         # y_score is predicted
         # read what different metrices do and try multiple
-        # TODO: Program argument to switch between test set and validation set here.
         # TODO: filter children?
 
         return

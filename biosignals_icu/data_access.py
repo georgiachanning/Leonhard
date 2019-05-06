@@ -132,25 +132,36 @@ class DataAccess(object):
 
     def get_patients(self):
 
-        if self.limit_parameter is None:
-            patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id;")
-                                         .fetchall())
+        if self.program_args["get_kids"]:
+            if self.limit_parameter is None:
+                patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS "
+                                                             "ORDER BY subject_id;").fetchall())
+            else:
+                patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id "
+                                                             "LIMIT {limit} OFFSET {offset};"
+                                                             .format(limit=self.limit_parameter,
+                                                                     offset=self.offset_parameter)))
         else:
-            patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id "
-                                                         "LIMIT {limit} OFFSET {offset};"
-                                                         .format(limit=self.limit_parameter, offset=self.offset_parameter)))
+            if self.limit_parameter is None:
+                patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT PATIENTS.SUBJECT_ID FROM PATIENTS "
+                                                             "INNER JOIN ADMISSIONS ON "
+                                                             "ADMISSIONS.SUBJECT_ID = PATIENTS.SUBJECT_ID "
+                                                             "WHERE julianday(ADMISSIONS.admittime) - "
+                                                             "julianday(PATIENTS.DOB) > 5840 "
+                                                             "ORDER BY PATIENTS.subject_id ;"))
+            else:
+                patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT PATIENTS.SUBJECT_ID FROM PATIENTS "
+                                                             "INNER JOIN ADMISSIONS ON "
+                                                             "ADMISSIONS.SUBJECT_ID = PATIENTS.SUBJECT_ID "
+                                                             "WHERE julianday(ADMISSIONS.admittime) - "
+                                                             "julianday(PATIENTS.DOB) > 5840 "
+                                                             "ORDER BY PATIENTS.subject_id "
+                                                             "LIMIT {limit} OFFSET {offset};"
+                                                             .format(limit=self.limit_parameter,
+                                                                     offset=self.offset_parameter)))
 
         patient_array_list = list(sum(patient_list_in_tuple, ()))
         return patient_array_list
-
-    def get_adult_patients(self):
-        adult_patients_in_tuple = list(self.db.execute("SELECT ADMISSIONS.SUBJECT_ID FROM ADMISSIONS "
-                                                       "INNER JOIN PATIENTS ON "
-                                                       "ADMISSIONS.SUBJECT_ID = PATIENTS.SUBJECT_ID "
-                                                       "WHERE ADMISSIONS.admittime - PATIENTS.DOB > 15 "
-                                                       "ORDER BY subject_id ;"))
-        adult_patient_list = list(sum(adult_patients_in_tuple, ()))
-        return adult_patient_list
 
     def get_last_timestamp(self, table_name):
         result = self.db.execute("SELECT timestamp "
@@ -187,99 +198,61 @@ class DataAccess(object):
 
         return flat_data
 
-        '''query = ("SELECT {COLUMNS} "
-                 "FROM {TABLE_NAME} "
-                 "WHERE subject_id IN (SELECT DISTINCT subject_id FROM PATIENTS "
-                 "ORDER BY SUBJECT_ID LIMIT {limit} OFFSET {offset}) "
-                 "AND ITEMID IN ({ID_SET}); ") \
-            .format(COLUMNS=columns,
-                    TABLE_NAME=table_name,
-                    ID_SET=id_set_string,
-                    offset=self.offset_parameter,
-                    limit=self.limit_parameter)
-
-        result = self.db.execute(query).fetchall()
-
-        if value_case is not None:
-            return filter(lambda x: x[1] is not None, result)
-        else:
-            return result'''
-
-    def get_items_by_drug(self, patient_id=None, id_set=set(), table_name="PRESCRIPTIONS",
-                         get_subjects=True, offset=None, value_case=None):
+    def get_items_by_drug(self, id_set=set(), table_name="PRESCRIPTIONS",
+                         get_subjects=True, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id, startdate, enddate"
-            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=self.loaded_patients_string)
-            order_clause = ""
         else:
             columns = "subject_id, drug" \
                 if value_case is None else \
                 "subject_id, drug".format(VALUE_CASE=value_case)
-            subject_clause = "AND SUBJECT_ID = '{SUBJECT_ID}'".format(SUBJECT_ID=patient_id)
-            order_clause = " ORDER BY subject_id "
-
-        if offset is None:
-            offset_clause = ""
-        else:
-            offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
         id_set = map(str, id_set)
         id_set_string = ", ".join(id_set)
+        data = []
 
-        query = ("SELECT {COLUMNS} "
-                 "FROM {TABLE_NAME} "
-                 "WHERE DRUG = {ID_SET} "
-                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {OFFSET_CLAUSE};") \
-            .format(COLUMNS=columns,
-                    TABLE_NAME=table_name,
-                    ID_SET=id_set_string,
-                    SUBJECT_CLAUSE=subject_clause,
-                    ORDER_CLAUSE=order_clause,
-                    OFFSET_CLAUSE=offset_clause)
-        result = self.db.execute(query).fetchall()
+        for patient in self.loaded_patients:
+            query_per_patient = ("SELECT {COLUMNS} "
+                                 "FROM {TABLE_NAME} "
+                                 "WHERE subject_id = {patient} AND DRUG IN ({ID_SET}); ")\
+                .format(COLUMNS=columns, TABLE_NAME=table_name,
+                        ID_SET=id_set_string,
+                        offset=self.offset_parameter,
+                        limit=self.limit_parameter,
+                        patient=patient)
+            data.append(self.db.execute(query_per_patient).fetchall())
 
-        if value_case is not None:
-            return filter(lambda x: x[1] is not None, result)
-        else:
-            return result
+        flat_data = [item for sublist in data for item in sublist]
 
-    def get_items_by_icd(self, patient_id=None, id_set=set(), table_name="DIAGNOSES_ICD",
-                         get_subjects=False, offset=None, value_case=None):
+        return flat_data
+
+    def get_items_by_icd(self, id_set=set(), table_name="DIAGNOSES_ICD",
+                         get_subjects=False, value_case=None):
         if get_subjects:
             columns = "DISTINCT subject_id"
-            subject_clause = "AND subject_id IN ({loaded_patients})".format(loaded_patients=self.loaded_patients_string)
-            order_clause = ""
         else:
             columns = "subject_id, icd9_code" \
                 if value_case is None else \
                 "subject_id, icd9_code".format(VALUE_CASE=value_case)
-            subject_clause = "AND SUBJECT_ID = '{SUBJECT_ID}'".format(SUBJECT_ID=patient_id)
-            order_clause = " ORDER BY subject_id "
-
-        if offset is None:
-            offset_clause = ""
-        else:
-            offset_clause = "OFFSET {OFFSET_NUM}".format(OFFSET_NUM=offset)
 
         id_set = map(lambda x: '"' + str(x) + '"', id_set)
-        id_set_string = ", ".join(id_set)  # USE THIS TO MAKE THE FILTER FOR PATIENT ID
+        id_set_string = ", ".join(id_set)
+        data = []
 
-        query = ("SELECT {COLUMNS} "
-                 "FROM {TABLE_NAME} "
-                 "WHERE ICD9_CODE IN ({ID_SET}) "
-                 "{SUBJECT_CLAUSE} {ORDER_CLAUSE} {OFFSET_CLAUSE};") \
-            .format(COLUMNS=columns,
-                    TABLE_NAME=table_name,
-                    ID_SET=id_set_string,
-                    SUBJECT_CLAUSE=subject_clause,
-                    ORDER_CLAUSE=order_clause,
-                    OFFSET_CLAUSE=offset_clause)
-        result = self.db.execute(query).fetchall()
+        for patient in self.loaded_patients:
+            query_per_patient = ("SELECT {COLUMNS} "
+                                 "FROM {TABLE_NAME} "
+                                 "WHERE subject_id = {patient} AND ICD9_CODE IN ({ID_SET}); ")\
+                .format(COLUMNS=columns, TABLE_NAME=table_name,
+                        ID_SET=id_set_string,
+                        offset=self.offset_parameter,
+                        limit=self.limit_parameter,
+                        patient=patient)
+            data.append(self.db.execute(query_per_patient).fetchall())
 
-        if value_case is not None:
-            return filter(lambda x: x[1] is not None, result)
-        else:
-            return list(sum(result, ()))
+        flat_data = [item for sublist in data for item in sublist]
+
+        return list(sum(flat_data, ()))
 
     def get_spo2_values(self, patient_id):
         # From: https://github.com/MIT-LCP/mimic-code/blob/master/concepts/firstday/blood-gas-first-day-arterial.sql
