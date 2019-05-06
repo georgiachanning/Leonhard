@@ -137,8 +137,8 @@ class DataAccess(object):
                 patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS "
                                                              "ORDER BY subject_id;").fetchall())
             else:
-                patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS ORDER BY subject_id "
-                                                             "LIMIT {limit} OFFSET {offset};"
+                patient_list_in_tuple = list(self.db.execute("SELECT DISTINCT subject_id FROM PATIENTS "
+                                                             "ORDER BY subject_id LIMIT {limit} OFFSET {offset};"
                                                              .format(limit=self.limit_parameter,
                                                                      offset=self.offset_parameter)))
         else:
