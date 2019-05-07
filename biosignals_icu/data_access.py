@@ -28,8 +28,8 @@ class DataAccess(object):
     def __init__(self, data_dir):
         self.db = self.connect(data_dir)
         self.program_args = Parameters.parse_parameters()
-        self.limit_parameter = int(self.program_args["num_patients_to_load"])
-        self.offset_parameter = int(self.program_args["offset"])
+        self.limit_parameter = self.program_args["num_patients_to_load"]
+        self.offset_parameter = self.program_args["offset"]
         self.loaded_patients = self.get_patients()
         loaded_patients_interim = map(str, self.loaded_patients)
         self.loaded_patients_string = ", ".join(loaded_patients_interim)
@@ -461,27 +461,23 @@ class DataAccess(object):
     def get_admit_time(self):
         admit_times = {}
         patients_with_arrhythmias = self.get_patients_with_arrhythmias()
-        query = ( "SELECT SUBJECT_ID, ADMITTIME, HADM_ID "
-                  "FROM ADMISSIONS "
-                  "WHERE ADMISSIONS.subject_id IN ({loaded_patients}) "
-                  "ORDER BY ADMITTIME DESC ;").format(loaded_patients=self.loaded_patients_string)
-        # arranged in descending order because when put into dictionary order will be reversed
-
-        all_admit_times = self.db.execute(query).fetchall()
 
         for patient in self.loaded_patients:
-            for admittime in range(len(all_admit_times)):
-                if patient == all_admit_times[admittime][0]:
-                    admit_times[patient] = all_admit_times[admittime][1]
-
             if patient in patients_with_arrhythmias:
-                query = ("SELECT ADMISSIONS.ADMITTIME FROM ADMISSIONS "
+                query = ("SELECT ADMISSIONS.SUBJECT_ID, ADMISSIONS.ADMITTIME, ADMISSIONS.HADM_ID FROM ADMISSIONS "
                          "INNER JOIN DIAGNOSES_ICD ON "
                          "DIAGNOSES_ICD.HADM_ID = ADMISSIONS.HADM_ID "
                          "WHERE ADMISSIONS.SUBJECT_ID = '{patient_id}' AND "
                          "DIAGNOSES_ICD.icd9_code IN (42610 , 42611, 42613, 4262, "
                          "42653, 4266, 42689, 4270, 4272, 42731, 42760, 4279, 7850);").format(patient_id=patient)
-                admit_times[patient] = self.db.execute(query).fetchone()[0]
+                admit_times[patient] = self.db.execute(query).fetchone()
+
+            else:
+                query = ("SELECT SUBJECT_ID, ADMITTIME, HADM_ID "
+                         "FROM ADMISSIONS "
+                         "WHERE ADMISSIONS.subject_id = {patient_id} "
+                         "ORDER BY ADMITTIME ASC ;").format(patient_id=patient)
+                admit_times[patient] = self.db.execute(query).fetchone()
 
         assert len(self.loaded_patients) == len(admit_times)
 

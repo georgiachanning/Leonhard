@@ -34,8 +34,6 @@ class Application(object):
         self.dataset = DataSet(data_dir)
         self.data_access = DataAccess(data_dir)
         self.loaded_patients = self.data_access.get_patients()
-        a = self.loaded_patients
-        a = 5
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -102,6 +100,22 @@ class Application(object):
             dict_with_renal_failure = self.dataset.binary_data_to_dict(patients_with_renal_failure,
                                                                        self.loaded_patients)
             args_for_all_patients["renal_failure"] = dict_with_renal_failure
+        if self.program_args["epilepsy"] is True:
+            patients_with_epilepsy = self.data_access.get_patients_with_epilepsy_history()
+            dict_with_epilepsy = self.dataset.binary_data_to_dict(patients_with_epilepsy, self.loaded_patients)
+            args_for_all_patients["epilepsy"] = dict_with_epilepsy
+        if self.program_args["chest_pain"] is True:
+            patients_with_chest_pain = self.data_access.get_patients_with_chest_pain()
+            dict_with_chest_pain = self.dataset.binary_data_to_dict(patients_with_chest_pain, self.loaded_patients)
+            args_for_all_patients["chest_pain"] = dict_with_chest_pain
+        if self.program_args["heart_failure"] is True:
+            patients_with_heart_failure = self.data_access.get_patients_with_heart_failure()
+            dict_with_heart_failure = self.dataset.binary_data_to_dict(patients_with_heart_failure, self.loaded_patients)
+            args_for_all_patients["heart_failure"] = dict_with_heart_failure
+        if self.program_args["orthopnea"] is True:
+            patients_with_orthopnea = self.data_access.get_patients_with_orthopnea()
+            dict_with_orthopnea = self.dataset.binary_data_to_dict(patients_with_orthopnea, self.loaded_patients)
+            args_for_all_patients["orthopnea"] = dict_with_orthopnea
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients, order_of_labels
@@ -179,13 +193,6 @@ class Application(object):
             print("Sensitivity is", sensitivity, file=results_file)
             print("Order of Labels: ", order_of_labels, file=results_file)
             print("Feature Importances: ", feature_importance, file=results_file)
-
-        # sensitivity or specificity must be also calculated (usually choose the one closest to top left (1,1) of
-
-        # roc curve, choose this threshold of specificity and sensitivity)
-        # y_score is predicted
-        # read what different metrices do and try multiple
-        # TODO: filter children?
 
         return
 

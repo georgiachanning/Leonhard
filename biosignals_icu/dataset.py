@@ -61,7 +61,7 @@ class DataSet(object):
         end_windows = {}
         # date format= '2125-04-25 23:39:00'
 
-        for current_patient_id, date in admit_time.items():
+        for current_patient_id, date, hadm in admit_time.values():
             start_window = parser.parse(date)
             end_me = start_window + timedelta(days=1)
             end_windows[current_patient_id] = end_me
