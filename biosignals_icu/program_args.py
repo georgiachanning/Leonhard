@@ -37,7 +37,7 @@ class Parameters(Action):
                             help="file where order of labels is saved")
         parser.add_argument("--model_file", default="/cluster/work/karlen/georgiachanning/model.pkl",
                             help="where should the output go?")
-        parser.add_argument("--results_file", default="/cluster/work/karlen/georgiachanning/full_run_1.txt",
+        parser.add_argument("--results_file", default="/cluster/work/karlen/georgiachanning/full_run_4.txt",
                             help="where should the output go?")
         parser.add_argument("--predictions_file", default="/cluster/work/karlen/georgiachanning/predictions.npz",
                             help="where should the output go?")
@@ -47,12 +47,16 @@ class Parameters(Action):
                             help="max num of trees in forest")
         parser.add_argument("--get_kids", default=False,
                             help="should this training also include child patients?")
-        parser.add_argument("--num_patients_to_load", default=34,
+        parser.add_argument("--num_patients_to_load", default=60,
                             help="how many patients' data should be loaded?")
         parser.add_argument("--offset", default=0,
                             help="offset for number of patients to load")
         parser.add_argument("--split", default="train",
                             help="train, test, or validate?")
+        parser.add_argument("--hyperp_file", default="/cluster/work/karlen/georgiachanning/_hyperp_full_run_4.txt",
+                            help="file for the hyperparameter optimization")
+        parser.add_argument("--num_hours_after_admission", default=24,
+                            help="how many hours after admission should be in the data window")
 
         # following are all biosignals
         parser.add_argument("--rrates", default=True,
@@ -75,19 +79,19 @@ class Parameters(Action):
                             help="include whether patient is diagnosed with heart_failure")
         parser.add_argument("--muscular_dystrophy", default=False,
                             help="include whether patient is diagnosed with muscular dystrophy?")
-        parser.add_argument("--alcohol", default=True,
+        parser.add_argument("--alcohol", default=False,
                             help="include whether patient has history of alcohol abuse?")
-        parser.add_argument("--epilepsy", default=True,
+        parser.add_argument("--epilepsy", default=False,
                             help="include whether patient has history of epilespy?")
         parser.add_argument("--orthopnea", default=False,
                             help="include whether patient is diagnosed with orthopnea?")
-        parser.add_argument("--chest_pain", default=True,
+        parser.add_argument("--chest_pain", default=False,
                             help="include whether patient has chest pain?")
-        parser.add_argument("--cardiac_arrest", default=True,
+        parser.add_argument("--cardiac_arrest", default=False,
                             help="include whether patient has cardiac arrest?")
-        parser.add_argument("--dyspnea", default=False,
+        parser.add_argument("--dyspnea", default=True,
                             help="include whether patient has dyspnea?")
-        parser.add_argument("--potassium", default=True,
+        parser.add_argument("--potassium", default=False,
                             help="include patient median potassium rates?")
         parser.add_argument("--sodium", default=True,
                             help="include patient median sodium rates?")

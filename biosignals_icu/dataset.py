@@ -59,11 +59,12 @@ class DataSet(object):
     def get_time_frame_per_patient(self):
         admit_time = self.data_access.get_admit_time()
         end_windows = {}
+        time_shift = self.program_args["num_hours_after_admission"]
         # date format= '2125-04-25 23:39:00'
 
         for current_patient_id, date, hadm in admit_time.values():
             start_window = parser.parse(date)
-            end_me = start_window + timedelta(days=1)
+            end_me = start_window + timedelta(hours=time_shift)
             end_windows[current_patient_id] = end_me
         return end_windows
 

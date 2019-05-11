@@ -143,8 +143,8 @@ class Application(object):
         # which split of data
         if self.program_args["split"] == "train":
             rf.fit(x_train, y_train)
-            x_data = x_train
-            y_data = y_train
+            x_data = np.asarray(x_train)
+            y_data = np.asarray(y_train)
 
         if self.program_args["split"] == "validate":
             rf.fit(x_val, y_val)
@@ -193,6 +193,39 @@ class Application(object):
             print("Sensitivity is", sensitivity, file=results_file)
             print("Order of Labels: ", order_of_labels, file=results_file)
             print("Feature Importances: ", feature_importance, file=results_file)
+
+        # hyper-parameter optimization
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.svm import SVC
+        from sklearn.metrics import classification_report
+
+        c, r = y_data.shape
+        y_data = y_data.reshape(c, )
+
+        tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],
+                             'C': [1, 10, 100, 1000]},
+                            {'kernel': ['linear'], 'C': [1, 10, 100, 1000]}]
+        scores = ['precision', 'recall']
+
+        for score in scores:
+
+            rf2 = GridSearchCV(SVC(), tuned_parameters, cv=5, scoring='%s_macro' % score)
+            rf2.fit(x_data, y_data)
+            best_params = rf2.best_params_
+            means = rf2.cv_results_['mean_test_score']
+            stds = rf2.cv_results_['std_test_score']
+            # classification_report = classification_report(y_data, y_pred)
+
+            with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
+                hyper_parameter_file.write("Best parameters set found on development set:" + '\n')
+                for key, value in best_params.items():
+                    hyper_parameter_file.write(key + ": ")
+                    hyper_parameter_file.write(str(value) + '\n')
+                hyper_parameter_file.write('\n' + "Grid scores on development set:")
+                for mean, std, params in zip(means, stds, rf2.cv_results_['params']):
+                    hyper_parameter_file.write("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params) + '\n')
+                # hyper_parameter_file.write("Classification report:")
+                # hyper_parameter_file.write(classification_report.encode('utf8'))
 
         return
 
