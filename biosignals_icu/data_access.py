@@ -461,19 +461,23 @@ class DataAccess(object):
     def get_admit_time(self):
         admit_times = {}
         patients_with_arrhythmias = self.get_patients_with_arrhythmias()
+        patients_with_medication = self.get_patients_with_arrhythmiacs()
 
         for patient in self.loaded_patients:
             if patient in patients_with_arrhythmias:
-                query = ("SELECT ADMISSIONS.SUBJECT_ID, ADMISSIONS.ADMITTIME, ADMISSIONS.HADM_ID FROM ADMISSIONS "
-                         "INNER JOIN DIAGNOSES_ICD ON "
-                         "DIAGNOSES_ICD.HADM_ID = ADMISSIONS.HADM_ID "
-                         "WHERE ADMISSIONS.SUBJECT_ID = '{patient_id}' AND "
-                         "DIAGNOSES_ICD.icd9_code IN (42610 , 42611, 42613, 4262, "
-                         "42653, 4266, 42689, 4270, 4272, 42731, 42760, 4279, 7850);").format(patient_id=patient)
-                admit_times[patient] = self.db.execute(query).fetchone()
+                if patient in patients_with_medication:
+                    admit_times[patient] = patients_with_medication[patient]
+                else:
+                    query = ("SELECT ADMISSIONS.SUBJECT_ID, ADMISSIONS.ADMITTIME FROM ADMISSIONS "
+                             "INNER JOIN DIAGNOSES_ICD ON "
+                             "DIAGNOSES_ICD.HADM_ID = ADMISSIONS.HADM_ID "
+                             "WHERE ADMISSIONS.SUBJECT_ID = '{patient_id}' AND "
+                             "DIAGNOSES_ICD.icd9_code IN (42610 , 42611, 42613, 4262, "
+                             "42653, 4266, 42689, 4270, 4272, 42731, 42760, 4279, 7850);").format(patient_id=patient)
+                    admit_times[patient] = self.db.execute(query).fetchone()
 
             else:
-                query = ("SELECT SUBJECT_ID, ADMITTIME, HADM_ID "
+                query = ("SELECT SUBJECT_ID, ADMITTIME "
                          "FROM ADMISSIONS "
                          "WHERE ADMISSIONS.subject_id = {patient_id} "
                          "ORDER BY ADMITTIME ASC ;").format(patient_id=patient)
@@ -625,5 +629,59 @@ class DataAccess(object):
                                   "ORDER BY subject_id ;").fetchall()
         return map(lambda x: x[0], quinine)
 
+    def get_patients_with_arrhythmiacs(self):
+        # https: // www.webmd.com / heart - disease / atrial - fibrillation / medicine - antiarrhythmics
+        # Dextrose may also be used to treat hyperkalemia (high levels of potassium in your blood).
+        patients_with_medication_starttime = {}
+
+        '''for patient in self.get_patients_with_arrhythmias():
+            patient_info_with_arrythmiacs = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+                                                            "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                            "AND DRUG LIKE '%Procainamide%' OR DRUG LIKE "
+                                                            "'%Feclainamde%' OR DRUG LIKE '%Sotalol%' OR DRUG "
+                                                            "LIKE '%Metoprolol%' OR DRUG LIKE '%Toprol%' OR DRUG "
+                                                            "LIKE '%Verapamil%' ORDER BY startdate ASC ;"
+                                                            .format(patient_id=patient)).fetchall()'''
+
+        for patient in self.get_patients_with_arrhythmias():
+            patient_info_with_procainamide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+                                                             "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                             "AND DRUG LIKE '%Procainamide%';".format(patient_id=patient)).fetchone()
+            if patient_info_with_procainamide:
+                patients_with_medication_starttime[patient] = patient_info_with_procainamide[0], patient_info_with_procainamide[2]
+                continue
+            patients_info_with_feclainide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+                                                            "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                            "AND DRUG LIKE '%Feclainamde%';".format(patient_id=patient)).fetchone()
+            if patients_info_with_feclainide:
+                patients_with_medication_starttime[patient] = patients_info_with_feclainide[0], patients_info_with_feclainide[2]
+                continue
+            patient_info_with_sotalol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+                                                        "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                        "AND DRUG LIKE '%Sotalol%';".format(patient_id=patient)).fetchone()
+            if patient_info_with_sotalol:
+                patients_with_medication_starttime[patient] = patient_info_with_sotalol[0], patient_info_with_sotalol[2]
+                continue
+
+            patient_info_with_metoprolol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+                                                           "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                           "AND DRUG LIKE '%Metoprolol%';".format(patient_id=patient)).fetchone()
+            if patient_info_with_metoprolol:
+                patients_with_medication_starttime[patient] = patient_info_with_metoprolol[0], patient_info_with_metoprolol[2]
+                continue
+            patient_info_with_toprol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+                                                       "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                       "AND DRUG LIKE '%Toprol%';".format(patient_id=patient)).fetchone()
+            if patient_info_with_toprol:
+                patients_with_medication_starttime[patient] = patient_info_with_toprol[0], patient_info_with_toprol[2]
+                continue
+            patient_info_with_verapamil = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+                                                          "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                          "AND DRUG LIKE '%Verapamil%';".format(patient_id=patient)).fetchone()
+            if patient_info_with_verapamil:
+                patients_with_medication_starttime[patient] = patient_info_with_verapamil[0], patient_info_with_verapamil[2]
+                continue
+
+        return patients_with_medication_starttime
 
 
