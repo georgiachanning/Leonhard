@@ -162,6 +162,26 @@ class DataSet(object):
 
         return blood_pressure_by_patient_id
 
+    def get_median_calcium(self, all_calcium_data, end_windows):
+        per_patient = {}
+        calcium_by_patient_id = {}
+        for (patient_id, measurement_time, feature_value) in all_calcium_data:
+            measurement_time = parser.parse(measurement_time)
+            max_time_allowed = end_windows[patient_id]
+            if not measurement_time <= max_time_allowed:
+                continue
+
+            if isinstance(feature_value, float):  # Ensure there is a measurement number.
+                if patient_id in per_patient:
+                    per_patient[patient_id].append(feature_value)
+                else:
+                    per_patient[patient_id] = [feature_value]
+
+        for patient_id in per_patient.keys():
+            calcium_by_patient_id[patient_id] = np.median(per_patient[patient_id])
+
+        return calcium_by_patient_id
+
     def get_y(self, data_access, x):
         patient_ids_with_arrhythmias = data_access.get_patients_with_arrhythmias()
         y = {}

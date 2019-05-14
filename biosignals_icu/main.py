@@ -116,6 +116,10 @@ class Application(object):
             patients_with_orthopnea = self.data_access.get_patients_with_orthopnea()
             dict_with_orthopnea = self.dataset.binary_data_to_dict(patients_with_orthopnea, self.loaded_patients)
             args_for_all_patients["orthopnea"] = dict_with_orthopnea
+        if self.program_args["calcium"] is True:
+            patients_with_calcium = self.data_access.get_calcium()
+            dict_with_calcium = self.dataset.get_median_calcium(patients_with_calcium, time_frames)
+            args_for_all_patients["calcium"] = dict_with_calcium
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients, order_of_labels

@@ -440,6 +440,12 @@ class DataAccess(object):
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, table_name="LABEVENTS")
 
+    def get_calcium(self):
+        item_ids = {
+            50808
+        }
+        return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, table_name="LABEVENTS")
+
     def get_heart_rate(self):
         item_ids = {
             51, 442, 455, 6701, 220179, 220050, 211, 220045
@@ -633,15 +639,6 @@ class DataAccess(object):
         # https: // www.webmd.com / heart - disease / atrial - fibrillation / medicine - antiarrhythmics
         # Dextrose may also be used to treat hyperkalemia (high levels of potassium in your blood).
         patients_with_medication_starttime = {}
-
-        '''for patient in self.get_patients_with_arrhythmias():
-            patient_info_with_arrythmiacs = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
-                                                            "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
-                                                            "AND DRUG LIKE '%Procainamide%' OR DRUG LIKE "
-                                                            "'%Feclainamde%' OR DRUG LIKE '%Sotalol%' OR DRUG "
-                                                            "LIKE '%Metoprolol%' OR DRUG LIKE '%Toprol%' OR DRUG "
-                                                            "LIKE '%Verapamil%' ORDER BY startdate ASC ;"
-                                                            .format(patient_id=patient)).fetchall()'''
 
         for patient in self.get_patients_with_arrhythmias():
             patient_info_with_procainamide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "

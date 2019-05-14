@@ -37,7 +37,7 @@ class Parameters(Action):
                             help="file where order of labels is saved")
         parser.add_argument("--model_file", default="/cluster/work/karlen/georgiachanning/model.pkl",
                             help="where should the output go?")
-        parser.add_argument("--results_file", default="/cluster/work/karlen/georgiachanning/full_run_0001.txt",
+        parser.add_argument("--results_file", default="/cluster/work/karlen/georgiachanning/full_run_0002.txt",
                             help="where should the output go?")
         parser.add_argument("--predictions_file", default="/cluster/work/karlen/georgiachanning/predictions.npz",
                             help="where should the output go?")
@@ -53,7 +53,7 @@ class Parameters(Action):
                             help="offset for number of patients to load")
         parser.add_argument("--split", default="train",
                             help="train, test, or validate?")
-        parser.add_argument("--hyperp_file", default="/cluster/work/karlen/georgiachanning/_hyperp_0001.txt",
+        parser.add_argument("--hyperp_file", default="/cluster/work/karlen/georgiachanning/_hyperp_0002.txt",
                             help="file for the hyperparameter optimization")
         parser.add_argument("--num_hours_to_measure", default=24,
                             help="how many hours after admission/before medication should be in the data window")
@@ -97,5 +97,7 @@ class Parameters(Action):
                             help="include patient median sodium rates?")
         parser.add_argument("--blood_pressure", default=False,
                             help="include patient blood pressure?")
+        parser.add_argument("--calcium", default=False,
+                            help="include patients calcium levels")
         return vars(parser.parse_args())
 
