@@ -24,11 +24,8 @@ import numpy as np
 from sklearn.externals import joblib
 import sqlite3
 from os.path import join
-from datetime import datetime, timedelta
 from dateutil import parser
 
-
-#TODO: optimize sensitivity and specificty with patricks code
 
 class Application(object):
     def __init__(self):
@@ -201,7 +198,10 @@ class Application(object):
         recall_score = recall_score(y_data, y_pred)
         accuracy_score = accuracy_score(y_data, y_pred)
         hamming_loss = hamming_loss(y_data, y_pred)
-        one_minus_specificity, sensitivity, thresholds = roc_curve(y_data, y_pred)
+        fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+        optimal_threshold_idx = np.argmin(np.linalg.norm(np.stack((fpr, tpr)).T -
+                                                        np.repeat([[0., 1.]], fpr.shape[0], axis=0), axis=1))
+        threshold = thresholds[optimal_threshold_idx]
 
         with open(self.program_args["results_file"], "w") as results_file:
             print("AUC Score is", auc_score, file=results_file)
@@ -210,8 +210,9 @@ class Application(object):
             print("Recall Score is", recall_score, file=results_file)
             print("Accuracy Score is", accuracy_score, file=results_file)
             print("Hamming Loss is", hamming_loss, file=results_file)
-            print("Specificity is", 1-one_minus_specificity, file=results_file)
-            print("Sensitivity is", sensitivity, file=results_file)
+            print("Specificity is", 1-fpr, file=results_file)
+            print("Sensitivity is", tpr, file=results_file)
+            print("Optimal Threshold:", threshold, file=results_file)
             print("Order of Labels: ", order_of_labels, file=results_file)
             print("Feature Importances: ", feature_importance, file=results_file)
 
