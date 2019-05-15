@@ -138,6 +138,66 @@ class Application(object):
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients, order_of_labels
 
+    def hyper_paramter(self, x_data, y_data):
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.svm import SVC
+        from sklearn.metrics import roc_curve
+        from sklearn.metrics import roc_auc_score
+        c, r = y_data.shape
+        y_data = y_data.reshape(c, )
+
+        tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],
+                             'C': [1, 10, 100, 1000]},
+                            {'kernel': ['linear'], 'C': [1, 10, 100, 1000]}]
+        scores = ['precision', 'recall']
+
+        for score in scores:
+
+            rf0 = GridSearchCV(SVC(), tuned_parameters, cv=5, scoring='%s_macro' % score)
+            rf0.fit(x_data, y_data)
+            best_params = rf0.best_params_
+            means = rf0.cv_results_['mean_test_score']
+            stds = rf0.cv_results_['std_test_score']
+
+            with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
+                hyper_parameter_file.write("Best parameters set found on development set:" + '\n')
+                for key, value in best_params.items():
+                    hyper_parameter_file.write(key + ": ")
+                    hyper_parameter_file.write(str(value) + '\n')
+                hyper_parameter_file.write('\n' + "Grid scores on development set:")
+                for mean, std, params in zip(means, stds, rf0.cv_results_['params']):
+                    hyper_parameter_file.write("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params) + '\n')
+
+            # num of trees
+            n_estimators = [1, 2, 4, 8, 16, 32, 64, 100, 200]
+            for estimator in n_estimators:
+                rf1 = RandomForestClassifier(n_estimators=estimator, n_jobs=-1)
+                rf1.fit(x_data, y_data)
+                train_pred = rf1.predict(x_data)
+                false_positive_rate, true_positive_rate, thresholds = roc_curve(y_data, train_pred)
+                auc_score = roc_auc_score(y_data, train_pred)
+                with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
+                    hyper_parameter_file.write("Num " + str(n_estimators) + " estimators:" + '\n')
+                    hyper_parameter_file.write("False positive rate: " + str(false_positive_rate) + '\n')
+                    hyper_parameter_file.write("True positive rate: " + str(true_positive_rate) + '\n')
+                    hyper_parameter_file.write("Thresholds: " + str(thresholds) + '\n')
+                    hyper_parameter_file.write("AUC Score: " + str(auc_score) + '\n')
+
+            # max depth
+            max_depths = np.linspace(1, 32, 32, endpoint=True)
+            for max_depth in max_depths:
+                rf = RandomForestClassifier(max_depth=max_depth, n_jobs=-1)
+                rf.fit(x_data, y_data)
+                train_pred = rf.predict(x_data)
+                false_positive_rate, true_positive_rate, thresholds = roc_curve(y_data, train_pred)
+                auc_score = roc_auc_score(y_data, train_pred)
+                with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
+                    hyper_parameter_file.write("Num " + str(max_depth) + " as max depth:" + '\n')
+                    hyper_parameter_file.write("False positive rate: " + str(false_positive_rate) + '\n')
+                    hyper_parameter_file.write("True positive rate: " + str(true_positive_rate) + '\n')
+                    hyper_parameter_file.write("Thresholds: " + str(thresholds) + '\n')
+                    hyper_parameter_file.write("AUC Score: " + str(auc_score) + '\n')
+
     def run(self):
 
         all_patients_features, order_of_labels = self.get_data()
