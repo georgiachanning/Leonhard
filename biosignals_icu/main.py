@@ -24,6 +24,8 @@ import numpy as np
 from sklearn.externals import joblib
 import sqlite3
 from os.path import join
+from datetime import datetime, timedelta
+from dateutil import parser
 
 
 class Application(object):
@@ -34,6 +36,7 @@ class Application(object):
         self.dataset = DataSet(data_dir)
         self.data_access = DataAccess(data_dir)
         self.loaded_patients = self.data_access.get_patients()
+        self.other_data()
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -41,14 +44,27 @@ class Application(object):
                              detect_types=sqlite3.PARSE_DECLTYPES)
         return db
 
-    def getsample(self):
-        dict_1 = {1: 11, 2: 22, 3: 33, 4: 44, 5: 55}
-        dict_2 = {1: 1, 3: 9, 4: 16}
-        dict_3 = {4: 8, 5: 10, 2: 4}
-        dict_4 = {3: 0, 2: 0, 1: 0}
-        dict_5 = {5: 4820230, 4: 239840, 3: 497340}
-        args = {'a': dict_1, 'b': dict_2, 'c': dict_3, 'd': dict_4, 'e': dict_5}
-        self.dataset.make_all_patients(**args)
+    def other_data(self):
+        # a = self.data_access.get_patients_with_arrhythmias()
+        b = self.data_access.get_patients_with_arrhythmiacs()
+        difference = {}
+
+        '''a_Without_b = []
+        for patient in a:
+            if patient in b.keys():
+                continue
+            else:
+                a_Without_b.append(patient)'''
+
+        for patient in b.values():
+            patient_admit = list(self.db.execute("SELECT HADM_ID, ADMITTIME, SUBJECT_ID FROM ADMISSIONS "
+                                                 "WHERE HADM_ID = '{patient_hadm}';".format(patient_hadm=patient[2])).fetchone())
+
+            difference[patient[0]] = (parser.parse(patient[1]) - parser.parse(patient_admit[1])).total_seconds()
+        avg_time_before_medication = sum(difference)/len(difference)
+        # people were medicated on average within 11 hours 16 minutes and 17 seconds of admission,
+        # so keep for 24/12 hours measurements, drop for smaller
+        return
 
     def get_data(self):
         time_frames = self.dataset.get_time_frame_per_patient()
@@ -201,8 +217,6 @@ class Application(object):
         # hyper-parameter optimization
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
-        from sklearn.metrics import classification_report
-
         c, r = y_data.shape
         y_data = y_data.reshape(c, )
 
@@ -218,7 +232,6 @@ class Application(object):
             best_params = rf2.best_params_
             means = rf2.cv_results_['mean_test_score']
             stds = rf2.cv_results_['std_test_score']
-            # classification_report = classification_report(y_data, y_pred)
 
             with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
                 hyper_parameter_file.write("Best parameters set found on development set:" + '\n')
@@ -228,8 +241,6 @@ class Application(object):
                 hyper_parameter_file.write('\n' + "Grid scores on development set:")
                 for mean, std, params in zip(means, stds, rf2.cv_results_['params']):
                     hyper_parameter_file.write("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params) + '\n')
-                # hyper_parameter_file.write("Classification report:")
-                # hyper_parameter_file.write(classification_report.encode('utf8'))
 
         return
 

@@ -442,7 +442,7 @@ class DataAccess(object):
 
     def get_calcium(self):
         item_ids = {
-            50808
+            50808, 45268
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, table_name="LABEVENTS")
 
@@ -500,25 +500,10 @@ class DataAccess(object):
         }
         return self.get_items_by_id_set(get_subjects=True, id_set=item_ids, table_name="LABEVENTS")
 
-    # when icd9_code = '42610' then 1
-    #     when icd9_code = '42611' then 1
-    #     when icd9_code = '42613' then 1
-    #     when icd9_code between '4262 ' and '42653' then 1
-    #     when icd9_code between '4266 ' and '42689' then 1
-    #     when icd9_code = '4270 ' then 1
-    #     when icd9_code = '4272 ' then 1
-    #     when icd9_code = '42731' then 1
-    #     when icd9_code = '42760' then 1
-    #     when icd9_code = '4279 ' then 1
-    #     when icd9_code = '7850 ' then 1
-    #     when icd9_code between 'V450 ' and 'V4509' then 1
-    #     when icd9_code between 'V533 ' and 'V5339' then 1
-    #current get by icd function wont let me use the ones with letters
-
     def get_patients_with_arrhythmias(self):
         item_ids = {
             "42610", "42611", "42613", "4262", "42653", "4266", "42689", "4270", "4272", "42731", "42760", "4279",
-            "7850"
+            "7850", "V4501", "V4502", "V4509", "V5331", "V5332", "V5339"
         }
         patients_with_arrhythmias = self.get_items_by_icd(get_subjects=True, id_set=item_ids)
         return patients_with_arrhythmias
@@ -636,47 +621,78 @@ class DataAccess(object):
         return map(lambda x: x[0], quinine)
 
     def get_patients_with_arrhythmiacs(self):
-        # https: // www.webmd.com / heart - disease / atrial - fibrillation / medicine - antiarrhythmics
-        # Dextrose may also be used to treat hyperkalemia (high levels of potassium in your blood).
         patients_with_medication_starttime = {}
 
         for patient in self.get_patients_with_arrhythmias():
-            patient_info_with_procainamide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+            patient_info_with_procainamide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
                                                              "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
                                                              "AND DRUG LIKE '%Procainamide%';".format(patient_id=patient)).fetchone()
             if patient_info_with_procainamide:
-                patients_with_medication_starttime[patient] = patient_info_with_procainamide[0], patient_info_with_procainamide[2]
+                patients_with_medication_starttime[patient] = patient_info_with_procainamide[0], patient_info_with_procainamide[2], patient_info_with_procainamide[4]
                 continue
-            patients_info_with_feclainide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+            patients_info_with_feclainide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
                                                             "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
                                                             "AND DRUG LIKE '%Feclainamde%';".format(patient_id=patient)).fetchone()
             if patients_info_with_feclainide:
-                patients_with_medication_starttime[patient] = patients_info_with_feclainide[0], patients_info_with_feclainide[2]
+                patients_with_medication_starttime[patient] = patients_info_with_feclainide[0], patients_info_with_feclainide[2], patients_info_with_feclainide[4]
                 continue
-            patient_info_with_sotalol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+            patient_info_with_sotalol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
                                                         "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
                                                         "AND DRUG LIKE '%Sotalol%';".format(patient_id=patient)).fetchone()
             if patient_info_with_sotalol:
-                patients_with_medication_starttime[patient] = patient_info_with_sotalol[0], patient_info_with_sotalol[2]
+                patients_with_medication_starttime[patient] = patient_info_with_sotalol[0], patient_info_with_sotalol[2], patient_info_with_sotalol[4]
                 continue
 
-            patient_info_with_metoprolol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+            patient_info_with_metoprolol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
                                                            "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
                                                            "AND DRUG LIKE '%Metoprolol%';".format(patient_id=patient)).fetchone()
             if patient_info_with_metoprolol:
-                patients_with_medication_starttime[patient] = patient_info_with_metoprolol[0], patient_info_with_metoprolol[2]
+                patients_with_medication_starttime[patient] = patient_info_with_metoprolol[0], patient_info_with_metoprolol[2], patient_info_with_metoprolol[4]
                 continue
-            patient_info_with_toprol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+            patient_info_with_toprol = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
                                                        "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
                                                        "AND DRUG LIKE '%Toprol%';".format(patient_id=patient)).fetchone()
             if patient_info_with_toprol:
-                patients_with_medication_starttime[patient] = patient_info_with_toprol[0], patient_info_with_toprol[2]
+                patients_with_medication_starttime[patient] = patient_info_with_toprol[0], patient_info_with_toprol[2], patient_info_with_toprol[4]
                 continue
-            patient_info_with_verapamil = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc "
+            patient_info_with_verapamil = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
                                                           "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
                                                           "AND DRUG LIKE '%Verapamil%';".format(patient_id=patient)).fetchone()
             if patient_info_with_verapamil:
-                patients_with_medication_starttime[patient] = patient_info_with_verapamil[0], patient_info_with_verapamil[2]
+                patients_with_medication_starttime[patient] = patient_info_with_verapamil[0], patient_info_with_verapamil[2], patient_info_with_verapamil[4]
+                continue
+            patient_info_with_digoxin = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
+                                                       "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                       "AND DRUG LIKE '%Digoxin%';".format(patient_id=patient)).fetchone()
+            if patient_info_with_digoxin:
+                patients_with_medication_starttime[patient] = patient_info_with_digoxin[0], patient_info_with_digoxin[2], patient_info_with_digoxin[4]
+                continue
+            patient_info_with_amiodarone = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
+                                                       "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                       "AND DRUG LIKE '%Amiodarone%';".format(patient_id=patient)).fetchone()
+            if patient_info_with_amiodarone:
+                patients_with_medication_starttime[patient] = patient_info_with_amiodarone[0], patient_info_with_amiodarone[2], patient_info_with_amiodarone[4]
+                continue
+            patient_info_with_potassium_chloride = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
+                                                                   "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                                   "AND DRUG LIKE '%Potassium Chloride%';"
+                                                                   .format(patient_id=patient)).fetchone()
+            if patient_info_with_potassium_chloride:
+                patients_with_medication_starttime[patient] = patient_info_with_potassium_chloride[0], patient_info_with_potassium_chloride[2], patient_info_with_potassium_chloride[4]
+                continue
+            patient_info_with_torsemide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
+                                                                   "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                                   "AND DRUG LIKE '%Torsemide%';"
+                                                                   .format(patient_id=patient)).fetchone()
+            if patient_info_with_torsemide:
+                patients_with_medication_starttime[patient] = patient_info_with_torsemide[0], patient_info_with_torsemide[2], patient_info_with_torsemide[4]
+                continue
+            patient_info_with_sodium_chloride = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
+                                                                   "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                                   "AND DRUG LIKE '%Sodium Chloride%';"
+                                                                   .format(patient_id=patient)).fetchone()
+            if patient_info_with_sodium_chloride:
+                patients_with_medication_starttime[patient] = patient_info_with_sodium_chloride[0], patient_info_with_sodium_chloride[2], patient_info_with_sodium_chloride[4]
                 continue
 
         return patients_with_medication_starttime
