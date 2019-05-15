@@ -28,6 +28,8 @@ from datetime import datetime, timedelta
 from dateutil import parser
 
 
+#TODO: optimize sensitivity and specificty with patricks code
+
 class Application(object):
     def __init__(self):
         self.program_args = Parameters.parse_parameters()
@@ -36,7 +38,6 @@ class Application(object):
         self.dataset = DataSet(data_dir)
         self.data_access = DataAccess(data_dir)
         self.loaded_patients = self.data_access.get_patients()
-        self.other_data()
 
     def connect(self, data_dir):
         db = sqlite3.connect(join(data_dir, DataAccess.DB_FILE_NAME),
@@ -45,16 +46,16 @@ class Application(object):
         return db
 
     def other_data(self):
-        # a = self.data_access.get_patients_with_arrhythmias()
+        a = self.data_access.get_patients_with_arrhythmias()
         b = self.data_access.get_patients_with_arrhythmiacs()
         difference = {}
 
-        '''a_Without_b = []
+        a_Without_b = []
         for patient in a:
             if patient in b.keys():
                 continue
             else:
-                a_Without_b.append(patient)'''
+                a_Without_b.append(patient)
 
         for patient in b.values():
             patient_admit = list(self.db.execute("SELECT HADM_ID, ADMITTIME, SUBJECT_ID FROM ADMISSIONS "
@@ -64,7 +65,7 @@ class Application(object):
         avg_time_before_medication = sum(difference)/len(difference)
         # people were medicated on average within 11 hours 16 minutes and 17 seconds of admission,
         # so keep for 24/12 hours measurements, drop for smaller
-        return
+        return avg_time_before_medication
 
     def get_data(self):
         time_frames = self.dataset.get_time_frame_per_patient()

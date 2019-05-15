@@ -472,14 +472,15 @@ class DataAccess(object):
         for patient in self.loaded_patients:
             if patient in patients_with_arrhythmias:
                 if patient in patients_with_medication:
-                    admit_times[patient] = patients_with_medication[patient]
+                    admit_times[patient] = patients_with_medication[patient][0], patients_with_medication[patient][1]
                 else:
                     query = ("SELECT ADMISSIONS.SUBJECT_ID, ADMISSIONS.ADMITTIME FROM ADMISSIONS "
                              "INNER JOIN DIAGNOSES_ICD ON "
                              "DIAGNOSES_ICD.HADM_ID = ADMISSIONS.HADM_ID "
                              "WHERE ADMISSIONS.SUBJECT_ID = '{patient_id}' AND "
-                             "DIAGNOSES_ICD.icd9_code IN (42610 , 42611, 42613, 4262, "
-                             "42653, 4266, 42689, 4270, 4272, 42731, 42760, 4279, 7850);").format(patient_id=patient)
+                             "DIAGNOSES_ICD.icd9_code IN ('42610' , '42611', '42613', '4262', "
+                             "'42653', '4266', '42689', '4270', '4272', '42731', '42760', '4279', '7850', 'V4501', "
+                             "'V4502', 'V4509', 'V5331', 'V5332', 'V5339');").format(patient_id=patient)
                     admit_times[patient] = self.db.execute(query).fetchone()
 
             else:
