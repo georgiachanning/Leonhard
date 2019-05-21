@@ -220,7 +220,10 @@ class Application(object):
                                validation_set_size=int(np.rint(validation_set_fraction*len(x))),
                                test_set_size=int(np.rint(test_set_fraction*len(x))))
 
-        rf = RandomForestClassifier()
+        num_estimators = self.program_args["max_num_of_trees"]
+        max_depth = self.program_args["max_depth_of_trees"]
+
+        rf = RandomForestClassifier(n_estimators=num_estimators, max_depth=max_depth)
 
         # which split of data
         if self.program_args["split"] == "train":
