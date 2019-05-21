@@ -37,11 +37,11 @@ class Parameters(Action):
                             help="file where order of labels is saved")
         parser.add_argument("--model_file", default="/cluster/work/karlen/georgiachanning/model.pkl",
                             help="where should the output go?")
-        parser.add_argument("--results_file", default="/cluster/work/karlen/georgiachanning/full_run_0002.txt",
+        parser.add_argument("--results_file", default="/cluster/work/karlen/georgiachanning/ap_1b_.txt",
                             help="where should the output go?")
         parser.add_argument("--predictions_file", default="/cluster/work/karlen/georgiachanning/predictions.npz",
                             help="where should the output go?")
-        parser.add_argument("--max_depth_of_trees", default=5,
+        parser.add_argument("--max_depth_of_treejs", default=5,
                             help="max depth of each tree")
         parser.add_argument("--max_num_of_trees", default=50,
                             help="max num of trees in forest")
@@ -51,15 +51,15 @@ class Parameters(Action):
                             help="how many patients' data should be loaded?")
         parser.add_argument("--offset", default=0,
                             help="offset for number of patients to load")
-        parser.add_argument("--split", default="train",
+        parser.add_argument("--split", default="validate",
                             help="train, test, or validate?")
-        parser.add_argument("--hyperp_file", default="/cluster/work/karlen/georgiachanning/_hyperp_0002.txt",
+        parser.add_argument("--hyperp_file", default="/cluster/work/karlen/georgiachanning/ap_1b_hyperp.txt",
                             help="file for the hyperparameter optimization")
         parser.add_argument("--num_hours_to_measure", default=24,
                             help="how many hours after admission/before medication should be in the data window")
 
         # following are all biosignals
-        parser.add_argument("--rrates", default=True,
+        parser.add_argument("--rrates", default=False,
                             help="include respiratory rates?")
         parser.add_argument("--cocaine", default=False,
                             help="include cocaine history?")
@@ -71,7 +71,7 @@ class Parameters(Action):
                             help="include whether patient is prescribed terfenadine?")
         parser.add_argument("--pulmonary_circulation_disorder", default=False,
                             help="include whether patient is diagnosed with lung disease?")
-        parser.add_argument("--lung_disease", default=True,
+        parser.add_argument("--lung_disease", default=False,
                             help="include whether patient is diagnosed with pulmonary circulation disorder?")
         parser.add_argument("--renal_failure", default=False,
                             help="include whether patient is diagnosed with renal failure?")
@@ -83,13 +83,11 @@ class Parameters(Action):
                             help="include whether patient has history of alcohol abuse?")
         parser.add_argument("--epilepsy", default=False,
                             help="include whether patient has history of epilespy?")
-        parser.add_argument("--orthopnea", default=False,
-                            help="include whether patient is diagnosed with orthopnea?")
         parser.add_argument("--chest_pain", default=False,
                             help="include whether patient has chest pain?")
         parser.add_argument("--cardiac_arrest", default=False,
                             help="include whether patient has cardiac arrest?")
-        parser.add_argument("--dyspnea", default=True,
+        parser.add_argument("--dyspnea", default=False,
                             help="include whether patient has dyspnea?")
         parser.add_argument("--potassium", default=False,
                             help="include patient median potassium rates?")
@@ -97,7 +95,7 @@ class Parameters(Action):
                             help="include patient median sodium rates?")
         parser.add_argument("--blood_pressure", default=False,
                             help="include patient blood pressure?")
-        parser.add_argument("--calcium", default=False,
+        parser.add_argument("--calcium", default=True,
                             help="include patients calcium levels")
         return vars(parser.parse_args())
 

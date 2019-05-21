@@ -530,13 +530,7 @@ class DataAccess(object):
 
     def get_patients_with_chest_pain(self):
         item_ids = {
-            "R07.1", "R07.8", "R07.89", "R07.9",
-        }
-        return self.get_items_by_icd(get_subjects=True, id_set=item_ids)
-
-    def get_patients_with_orthopnea(self):
-        item_ids = {
-            "R06.01",
+            "4131", "4139",
         }
         return self.get_items_by_icd(get_subjects=True, id_set=item_ids)
 
@@ -663,14 +657,14 @@ class DataAccess(object):
                 patients_with_medication_starttime[patient] = patient_info_with_verapamil[0], patient_info_with_verapamil[2], patient_info_with_verapamil[4]
                 continue
             patient_info_with_digoxin = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
-                                                       "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
-                                                       "AND DRUG LIKE '%Digoxin%';".format(patient_id=patient)).fetchone()
+                                                        "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                        "AND DRUG LIKE '%Digoxin%';".format(patient_id=patient)).fetchone()
             if patient_info_with_digoxin:
                 patients_with_medication_starttime[patient] = patient_info_with_digoxin[0], patient_info_with_digoxin[2], patient_info_with_digoxin[4]
                 continue
             patient_info_with_amiodarone = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
-                                                       "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
-                                                       "AND DRUG LIKE '%Amiodarone%';".format(patient_id=patient)).fetchone()
+                                                           "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                           "AND DRUG LIKE '%Amiodarone%';".format(patient_id=patient)).fetchone()
             if patient_info_with_amiodarone:
                 patients_with_medication_starttime[patient] = patient_info_with_amiodarone[0], patient_info_with_amiodarone[2], patient_info_with_amiodarone[4]
                 continue
@@ -682,16 +676,16 @@ class DataAccess(object):
                 patients_with_medication_starttime[patient] = patient_info_with_potassium_chloride[0], patient_info_with_potassium_chloride[2], patient_info_with_potassium_chloride[4]
                 continue
             patient_info_with_torsemide = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
-                                                                   "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
-                                                                   "AND DRUG LIKE '%Torsemide%';"
-                                                                   .format(patient_id=patient)).fetchone()
+                                                          "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                          "AND DRUG LIKE '%Torsemide%';"
+                                                          .format(patient_id=patient)).fetchone()
             if patient_info_with_torsemide:
                 patients_with_medication_starttime[patient] = patient_info_with_torsemide[0], patient_info_with_torsemide[2], patient_info_with_torsemide[4]
                 continue
             patient_info_with_sodium_chloride = self.db.execute("SELECT DISTINCT subject_id, drug, startdate, ndc, hadm_id "
-                                                                   "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
-                                                                   "AND DRUG LIKE '%Sodium Chloride%';"
-                                                                   .format(patient_id=patient)).fetchone()
+                                                                "FROM PRESCRIPTIONS WHERE subject_id = '{patient_id}' "
+                                                                "AND DRUG LIKE '%Sodium Chloride%';"
+                                                                .format(patient_id=patient)).fetchone()
             if patient_info_with_sodium_chloride:
                 patients_with_medication_starttime[patient] = patient_info_with_sodium_chloride[0], patient_info_with_sodium_chloride[2], patient_info_with_sodium_chloride[4]
                 continue

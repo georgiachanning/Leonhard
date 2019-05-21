@@ -68,6 +68,10 @@ class Application(object):
         time_frames = self.dataset.get_time_frame_per_patient()
         args_for_all_patients = {}
 
+        if self.program_args["dyspnea"] is True:
+            patients_with_dyspnea = self.data_access.get_patients_with_dyspnea()
+            dict_with_dyspnea = self.dataset.binary_data_to_dict(patients_with_dyspnea, self.loaded_patients)
+            args_for_all_patients["dyspnea"] = dict_with_dyspnea
         if self.program_args["rrates"] is True:
             all_respiratory_rates = self.data_access.get_rrates()
             dict_with_rr_data = self.dataset.get_rr_data(time_frames, all_respiratory_rates)
@@ -126,10 +130,6 @@ class Application(object):
             patients_with_heart_failure = self.data_access.get_patients_with_heart_failure()
             dict_with_heart_failure = self.dataset.binary_data_to_dict(patients_with_heart_failure, self.loaded_patients)
             args_for_all_patients["heart_failure"] = dict_with_heart_failure
-        if self.program_args["orthopnea"] is True:
-            patients_with_orthopnea = self.data_access.get_patients_with_orthopnea()
-            dict_with_orthopnea = self.dataset.binary_data_to_dict(patients_with_orthopnea, self.loaded_patients)
-            args_for_all_patients["orthopnea"] = dict_with_orthopnea
         if self.program_args["calcium"] is True:
             patients_with_calcium = self.data_access.get_calcium()
             dict_with_calcium = self.dataset.get_median_calcium(patients_with_calcium, time_frames)
@@ -143,8 +143,12 @@ class Application(object):
         from sklearn.svm import SVC
         from sklearn.metrics import roc_curve
         from sklearn.metrics import roc_auc_score
-        c, r = y_data.shape
-        y_data = y_data.reshape(c, )
+
+        with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
+                hyper_parameter_file.write("Hyper Parameters File: " + '\n')
+
+        c, r = np.asarray(y_data).shape
+        y_data = np.asarray(y_data).reshape(c, )
 
         tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],
                              'C': [1, 10, 100, 1000]},
@@ -159,7 +163,7 @@ class Application(object):
             means = rf0.cv_results_['mean_test_score']
             stds = rf0.cv_results_['std_test_score']
 
-            with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
+            with open(self.program_args["hyperp_file"], "a") as hyper_parameter_file:
                 hyper_parameter_file.write("Best parameters set found on development set:" + '\n')
                 for key, value in best_params.items():
                     hyper_parameter_file.write(key + ": ")
@@ -176,12 +180,12 @@ class Application(object):
                 train_pred = rf1.predict(x_data)
                 false_positive_rate, true_positive_rate, thresholds = roc_curve(y_data, train_pred)
                 auc_score = roc_auc_score(y_data, train_pred)
-                with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
-                    hyper_parameter_file.write("Num " + str(n_estimators) + " estimators:" + '\n')
+                with open(self.program_args["hyperp_file"], "a") as hyper_parameter_file:
+                    hyper_parameter_file.write("Num " + str(estimator) + " estimators:" + '\n')
                     hyper_parameter_file.write("False positive rate: " + str(false_positive_rate) + '\n')
                     hyper_parameter_file.write("True positive rate: " + str(true_positive_rate) + '\n')
                     hyper_parameter_file.write("Thresholds: " + str(thresholds) + '\n')
-                    hyper_parameter_file.write("AUC Score: " + str(auc_score) + '\n')
+                    hyper_parameter_file.write("AUC Score: " + str(auc_score) + '\n' + '\n')
 
             # max depth
             max_depths = np.linspace(1, 32, 32, endpoint=True)
@@ -191,12 +195,12 @@ class Application(object):
                 train_pred = rf.predict(x_data)
                 false_positive_rate, true_positive_rate, thresholds = roc_curve(y_data, train_pred)
                 auc_score = roc_auc_score(y_data, train_pred)
-                with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
+                with open(self.program_args["hyperp_file"], "a") as hyper_parameter_file:
                     hyper_parameter_file.write("Num " + str(max_depth) + " as max depth:" + '\n')
                     hyper_parameter_file.write("False positive rate: " + str(false_positive_rate) + '\n')
                     hyper_parameter_file.write("True positive rate: " + str(true_positive_rate) + '\n')
                     hyper_parameter_file.write("Thresholds: " + str(thresholds) + '\n')
-                    hyper_parameter_file.write("AUC Score: " + str(auc_score) + '\n')
+                    hyper_parameter_file.write("AUC Score: " + str(auc_score) + '\n' + '\n')
 
     def run(self):
 
@@ -221,8 +225,8 @@ class Application(object):
         # which split of data
         if self.program_args["split"] == "train":
             rf.fit(x_train, y_train)
-            x_data = np.asarray(x_train)
-            y_data = np.asarray(y_train)
+            x_data = x_train
+            y_data = y_train
 
         if self.program_args["split"] == "validate":
             rf.fit(x_val, y_val)
@@ -258,9 +262,9 @@ class Application(object):
         recall_score = recall_score(y_data, y_pred)
         accuracy_score = accuracy_score(y_data, y_pred)
         hamming_loss = hamming_loss(y_data, y_pred)
-        fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+        fpr, tpr, thresholds = roc_curve(y_data, y_pred)
         optimal_threshold_idx = np.argmin(np.linalg.norm(np.stack((fpr, tpr)).T -
-                                                        np.repeat([[0., 1.]], fpr.shape[0], axis=0), axis=1))
+                                                         np.repeat([[0., 1.]], fpr.shape[0], axis=0), axis=1))
         threshold = thresholds[optimal_threshold_idx]
 
         with open(self.program_args["results_file"], "w") as results_file:
@@ -276,33 +280,8 @@ class Application(object):
             print("Order of Labels: ", order_of_labels, file=results_file)
             print("Feature Importances: ", feature_importance, file=results_file)
 
-        # hyper-parameter optimization
-        from sklearn.model_selection import GridSearchCV
-        from sklearn.svm import SVC
-        c, r = y_data.shape
-        y_data = y_data.reshape(c, )
-
-        tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],
-                             'C': [1, 10, 100, 1000]},
-                            {'kernel': ['linear'], 'C': [1, 10, 100, 1000]}]
-        scores = ['precision', 'recall']
-
-        for score in scores:
-
-            rf2 = GridSearchCV(SVC(), tuned_parameters, cv=5, scoring='%s_macro' % score)
-            rf2.fit(x_data, y_data)
-            best_params = rf2.best_params_
-            means = rf2.cv_results_['mean_test_score']
-            stds = rf2.cv_results_['std_test_score']
-
-            with open(self.program_args["hyperp_file"], "w") as hyper_parameter_file:
-                hyper_parameter_file.write("Best parameters set found on development set:" + '\n')
-                for key, value in best_params.items():
-                    hyper_parameter_file.write(key + ": ")
-                    hyper_parameter_file.write(str(value) + '\n')
-                hyper_parameter_file.write('\n' + "Grid scores on development set:")
-                for mean, std, params in zip(means, stds, rf2.cv_results_['params']):
-                    hyper_parameter_file.write("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params) + '\n')
+        if self.program_args["split"] == "validate":
+            self.hyper_paramter(x_data, y_data)
 
         return
 
