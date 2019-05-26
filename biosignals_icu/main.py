@@ -134,6 +134,18 @@ class Application(object):
             patients_with_calcium = self.data_access.get_calcium()
             dict_with_calcium = self.dataset.get_median_calcium(patients_with_calcium, time_frames)
             args_for_all_patients["calcium"] = dict_with_calcium
+        if self.program_args["cocaine"] is True:
+            patients_with_cocaine = self.data_access.get_patients_with_cocaine()
+            dict_with_cocaine = self.dataset.binary_data_to_dict(patients_with_cocaine, self.loaded_patients)
+            args_for_all_patients["cocaine"] = dict_with_cocaine
+        if self.program_args["muscular_dystrophy"] is True:
+            patients_with_md = self.data_access.get_patients_with_muscular_dystrophy()
+            dict_with_md = self.dataset.binary_data_to_dict(patients_with_md, self.loaded_patients)
+            args_for_all_patients["muscular_dystrophy"] = dict_with_md
+        if self.program_args["cardiac_arrest"] is True:
+            patients_with_cardiac_arrest = self.data_access.get_patients_with_cardiac_arrest()
+            dict_with_ca = self.dataset.binary_data_to_dict(patients_with_cardiac_arrest, self.loaded_patients)
+            args_for_all_patients["cardiac_arrest"] = dict_with_ca
 
         all_patients, order_of_labels = self.dataset.make_all_patients(**args_for_all_patients)
         return all_patients, order_of_labels
